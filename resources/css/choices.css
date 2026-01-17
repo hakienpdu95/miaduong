@@ -1,0 +1,9 @@
+@import 'choices.js/public/assets/styles/choices.min.css';
+
+.choices {
+	margin-bottom: 0;
+}
+
+.choices__list--dropdown, .choices__list[aria-expanded] {
+	z-index: 10;
+}

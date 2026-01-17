@@ -1,0 +1,31 @@
+{
+    "$schema": "https://json.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite --config vite.config.backend.js vite.config.frontend.js",
+        "build": "vite build --config vite.config.backend.js vite.config.frontend.js"
+    },
+    "devDependencies": {
+        "autoprefixer": "^10.4.21",
+        "axios": "^1.8.2",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "^2.0.0",
+        "postcss": "^8.5.6",
+        "pusher-js": "^8.4.0",
+        "vite": "^7.0.4"
+    },
+    "dependencies": {
+        "@glidejs/glide": "^3.7.1",
+        "@popperjs/core": "^2.11.8",
+        "@yaireo/tagify": "^4.35.3",
+        "bootstrap": "^5.3.8",
+        "choices.js": "^11.1.0",
+        "flatpickr": "^4.6.13",
+        "jquery": "^3.7.1",
+        "qrcode-generator": "^2.0.2",
+        "suneditor": "^2.47.6",
+        "terser": "^5.43.1",
+        "toastify-js": "^1.12.0"
+    }
+}

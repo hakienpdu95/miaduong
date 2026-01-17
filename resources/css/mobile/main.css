@@ -1,0 +1,9 @@
+@import '../components/basic.css';
+@import '../components/header.css';
+@import '../components/menu.css';
+@import '../components/breadcrumb.css';
+@import '../components/footer.css';
+
+.backdrop {
+    overflow: hidden;
+}

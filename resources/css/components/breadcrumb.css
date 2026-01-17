@@ -1,0 +1,112 @@
+/* ## Breadcrumb
+--------------------------------------------- */
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(0,0,0,.1);
+    margin-bottom: var(--column-gap);
+    gap: 36px
+}
+
+.breadcrumb .main {
+    font-size: 28px;
+    line-height: 1.3;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: flex;
+    min-width: max-content
+}
+
+.breadcrumb .main * {
+    color: var(--gray-900,#212529)
+}
+
+.breadcrumb .main a:hover {
+    color: var(--primary,#d72027)
+}
+
+.breadcrumb .main+.main {
+    font-size: 24px;
+    font-weight: 400
+}
+
+.breadcrumb .main+.main::before {
+    content: "/";
+    padding: 0 10px
+}
+
+.breadcrumb .sub {
+    display: flex;
+    margin-left: auto;
+    white-space: nowrap;
+    overflow-x: auto
+}
+
+.breadcrumb .sub h1 {
+	line-height: 1.5;
+}
+
+.breadcrumb .sub:hover::-webkit-scrollbar {
+    height: 4px;
+    background: #ced4da;
+    display: block
+}
+
+.breadcrumb .sub:hover::-webkit-scrollbar-thumb {
+    cursor: pointer
+}
+
+.breadcrumb .sub::-webkit-scrollbar-track {
+    -webkit-box-shadow: inset 0 0 4px #fff;
+    border-radius: 6px;
+    background-color: #fff
+}
+
+.breadcrumb .sub::-webkit-scrollbar {
+    height: 6px;
+    background: #ced4da;
+    display: none
+}
+
+.breadcrumb .sub::-webkit-scrollbar-thumb {
+    border-radius: 6px;
+    background-color: #ced4da
+}
+
+@media (max-width: 768px) {
+    .breadcrumb .sub {
+        max-width:80%
+    }
+}
+
+.breadcrumb .sub a {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 16px;
+    display: flex;
+    align-items: center
+}
+
+.breadcrumb .sub a:first-child {
+    margin-left: 10px;
+}
+
+.breadcrumb .sub a::before {
+    content: "";
+    width: 4px;
+    height: 4px;
+    background: var(--primary,#d72027);
+    margin-right: 10px;
+    border-radius: 50%
+}
+
+.breadcrumb .sub a.active {
+    color: var(--primary,#d72027);
+    text-decoration: underline
+}
+
+/* ## End Breadcrumb
+--------------------------------------------- */

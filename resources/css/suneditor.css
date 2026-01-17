@@ -1,0 +1,6 @@
+@import 'suneditor/dist/css/suneditor.min.css';
+
+.sun-editor, .sun-editor-editable {
+    width: 100% !important;
+    box-sizing: border-box;
+}

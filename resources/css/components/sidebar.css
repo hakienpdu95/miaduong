@@ -1,0 +1,109 @@
+.fyi-position {
+    margin-bottom: var(--column-gap)
+}
+
+.popular .box-heading {
+    font-family: BarlowCondensed,"Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 30px;
+    line-height: 1.2;
+    color: var(--gray-900,#212529);
+    font-weight: 400;
+    text-transform: uppercase;
+    position: relative;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: min-content auto;
+    gap: 0 20px
+}
+
+.popular .box-heading::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: rgba(0,0,0,.1);
+    position: relative;
+    top: calc(50% - .5px)
+}
+
+.popular .box-heading * {
+    color: var(--gray-900,#212529);
+    white-space: nowrap
+}
+
+.popular .box-heading a:hover {
+    color: var(--primary,#d72027)
+}
+
+.popular .story:not(:last-child) {
+    border-bottom: 1px solid rgba(0,0,0,.1)
+}
+
+.popular .story:nth-child(2) .story__heading a::before {
+    background-position: -100px 0
+}
+
+.popular .story:nth-child(3) .story__heading a::before {
+    background-position: -200px 0
+}
+
+.popular .story:nth-child(4) .story__heading a::before {
+    background-position: -300px 0
+}
+
+.popular .story:nth-child(5) .story__heading a::before {
+    background-position: -400px 0
+}
+
+.popular .story__heading {
+    font-size: 16px;
+    padding: 16px
+}
+
+.popular .story__heading a {
+    position: relative;
+    padding-left: 50px
+}
+
+.popular .story__heading a:before {
+    content: "";
+    width: 40px;
+    height: 32px;
+    background: url(../../../assets/web/styles/img/sprites.svg?v=1.4) 0 0 no-repeat;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%)
+}
+
+.popular .story.story--focus {
+    padding: 0;
+    border: 0 none;
+    position: relative
+}
+
+.popular .story.story--focus .story__thumb a::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    background: linear-gradient(to top,#000 -15%,rgba(255,255,255,0) 70%)
+}
+
+.popular .story.story--focus .story__heading {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0
+}
+
+.popular .story.story--focus .story__heading a,.popular .story.story--focus .story__heading i {
+    color: #fff
+}
+
+.popular .story.story--focus .ic-emagazine,.popular .story.story--focus .ic-infographic {
+    filter: brightness(10)
+}
