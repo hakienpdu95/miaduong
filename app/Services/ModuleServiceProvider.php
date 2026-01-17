@@ -1,62 +1,76 @@
 <?php
 
-namespace App\Services;
+namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Constants\ModuleConst;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Cache;
+use App\Constants\ModuleConst;
 
+/**
+ * Service provider for dynamically registering module routes.
+ */
 class ModuleServiceProvider extends ServiceProvider
 {
-    public function boot()
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
     {
-        $this->registerRoutes();
-    }
+        // Load module configs trước khi đăng ký routes
+        ModuleConst::loadConfigs();
 
-    protected function registerRoutes()
-    {
-        // Cache danh sách module để giảm truy vấn
-        $modules = Cache::remember('module_routes', 3600, fn () => ModuleConst::getModules());
+        // Quét động các module từ thư mục controllers
+        $moduleDirs = glob(app_path('Http/Controllers/Backend/*'), GLOB_ONLYDIR);
 
-        Route::prefix('admin')->middleware(['web', 'auth:web'])->group(function () use ($modules) {
-            Route::get('/dashboard', \App\Http\Livewire\Backend\Dashboard::class)->name('dashboard');
+        Route::prefix('admin')
+            ->middleware(['web', 'auth:web'])
+            ->group(function () use ($moduleDirs) {
+                // Route dashboard (giả sử dùng controller)
+                Route::get('/dashboard', [\App\Http\Controllers\Backend\DashboardController::class, 'index'])->name('dashboard');
 
-            foreach ($modules as $module) {
-                // Xử lý tên route
-                if (str_ends_with($module, '_post_management')) {
-                    $routeName = str_replace('_post_management', '-posts', $module);
-                    $routeName = str_replace('_', '-', $routeName);
-                } else {
-                    $routeName = str_replace('_management', '', $module);
-                    $routeName = str_replace('_', '-', $routeName);
+                foreach ($moduleDirs as $dir) {
+                    $modulePascal = basename($dir); // e.g., 'PregnancyWeek'
+                    $moduleSnake = strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $modulePascal));
+                    $moduleKebab = str_replace('_', '-', $moduleSnake);
+                    $fullModuleName = $moduleSnake . '_management';
+
+                    // Kiểm tra nếu module hợp lệ (có config)
+                    if (!ModuleConst::isValidModule($fullModuleName)) {
+                        continue;
+                    }
+
+                    // Namespace cho controller
+                    $namespace = "App\\Http\\Controllers\\Backend\\{$modulePascal}";
+                    $controller = "{$namespace}\\{$modulePascal}Controller";
+
+                    if (!class_exists($controller)) {
+                        continue; // Bỏ qua nếu không có controller
+                    }
+
+                    // Đăng ký routes CRUD với resource (tối ưu, hỗ trợ full CRUD)
+                    Route::prefix($moduleKebab)
+                        ->name("{$moduleKebab}.")
+                        ->group(function () use ($controller, $fullModuleName) {
+                            Route::resource('/', $controller)
+                                ->middleware([
+                                    'index' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_VIEW,
+                                    'create' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_CREATE,
+                                    'store' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_CREATE,
+                                    'show' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_VIEW,
+                                    'edit' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_EDIT,
+                                    'update' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_EDIT,
+                                    'destroy' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_DELETE,
+                                ]);
+                        });
+
+                    // Hỗ trợ routes tùy chỉnh per module (tùy chọn)
+                    $routeFile = $dir . '/routes.php';
+                    if (file_exists($routeFile)) {
+                        Route::group(['prefix' => $moduleKebab, 'name' => "{$moduleKebab}."], function () use ($routeFile) {
+                            require $routeFile;
+                        });
+                    }
                 }
-
-                // Xử lý namespace cho Livewire components
-                $moduleName = str_replace('_management', '', $module);
-                $moduleParts = explode('_', $moduleName);
-                $namespaceSegment = implode('', array_map('ucfirst', $moduleParts));
-                $namespace = "App\\Http\\Livewire\\Backend\\{$namespaceSegment}";
-
-                // Kiểm tra class tồn tại để tránh lỗi
-                if (!class_exists("{$namespace}\\Index")) {
-                    continue;
-                }
-
-                // Định nghĩa các route trong group để giảm lặp code
-                Route::prefix($routeName)->name("{$routeName}.")->middleware("check.permission:{$module}," . ModuleConst::ACTION_VIEW)->group(function () use ($namespace, $module) {
-                    Route::get('/', "{$namespace}\\Index")->name('index');
-                    Route::get('/create', "{$namespace}\\Create")->name('create')->middleware("check.permission:{$module}," . ModuleConst::ACTION_CREATE);
-                    Route::get('/{id}/edit', "{$namespace}\\Edit")->name('edit')->middleware("check.permission:{$module}," . ModuleConst::ACTION_EDIT);
-                    Route::delete('/{id}', "{$namespace}\\Delete")->name('delete')->middleware("check.permission:{$module}," . ModuleConst::ACTION_DELETE);
-                });
-
-                // Bao gồm file route tùy chỉnh của module nếu tồn tại
-                $routeFile = app_path("Modules/{$namespaceSegment}/routes.php");
-                if (file_exists($routeFile)) {
-                    require $routeFile;
-                }
-            }
-        });
+            });
     }
 }
