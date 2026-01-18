@@ -9,7 +9,7 @@
 
                 @if ($errors->any())
                     <div class="alert alert-danger mb-3">
-                        {{ $errors->first('identifier') }}
+                        {!! implode('<br>', $errors->all()) !!}
                     </div>
                 @endif
 
@@ -24,7 +24,7 @@
 
                     <div class="mb-3">
                         <label for="identifier" class="form-label">Email hoặc Tên đăng nhập</label>
-                        <input name="identifier" type="text" id="identifier" class="form-control" placeholder="Nhập email hoặc tên đăng nhập" autocomplete="off" value="{{ old('identifier') }}" />
+                        <input name="identifier" type="text" id="identifier" class="form-control" placeholder="Nhập email hoặc tên đăng nhập" autocomplete="off" value="{{ old('identifier') }}" required />
                         @error('identifier')
                             <span class="text-danger small">{{ $message }}</span>
                         @enderror
@@ -32,7 +32,7 @@
 
                     <div class="mb-3">
                         <label for="password" class="form-label">Mật khẩu</label>
-                        <input name="password" type="password" id="password" class="form-control" placeholder="Nhập mật khẩu" autocomplete="off" />
+                        <input name="password" type="password" id="password" class="form-control" placeholder="Nhập mật khẩu" autocomplete="off" required />
                         @error('password')
                             <span class="text-danger small">{{ $message }}</span>
                         @enderror

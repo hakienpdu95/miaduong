@@ -12,8 +12,8 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::middleware('auth')->group(function () {
     Route::get('/admin/dashboard', function () {
-        return view('backend.dashboard');
-    })->name('admin.dashboard');
+        return view('layouts.backend');
+    })->name('dashboard');
 });
 
 Route::get('/lang/{locale}.json', [LanguageController::class, 'getTranslation']);

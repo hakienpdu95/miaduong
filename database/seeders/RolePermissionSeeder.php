@@ -38,12 +38,6 @@ class RolePermissionSeeder extends Seeder
                             'can_create' => false,
                             'can_edit' => false,
                             'can_delete' => false,
-                            'can_export' => false,
-                            'can_view_report' => false,
-                            'can_export_report' => false,
-                            'can_assign_permission' => false,
-                            'can_approve' => false,
-                            'can_reject' => false,
                         ],
                         $permissions
                     )

@@ -2,247 +2,238 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use App\Constants\ModuleConst;
+use Illuminate\Support\Str;
 
+/**
+ * Service for generating breadcrumbs dynamically in backend/frontend.
+ * Tích hợp với ModuleConst cho auto build, hiệu suất cao với static cache nội bộ.
+ */
 class BreadcrumbService
 {
-    protected $config;
+    protected static array $configs = []; // Static cache configs (load 1 lần per app)
+    protected static array $generated = []; // Cache generated per route per request
 
     public function __construct()
     {
-        // Load cấu hình chính
-        $this->config = config('breadcrumbs') ?? ['backend' => [], 'frontend' => []];
+        if (!empty(static::$configs)) {
+            return; // Load chỉ 1 lần
+        }
 
-        // Load động các file cấu hình con từ config/breadcrumbs/{section}/
+        // Sync configs từ ModuleConst (dynamic từ module configs)
+        ModuleConst::loadConfigs();
+        $modulesWithCategories = ModuleConst::getModulesWithCategories();
+
+        // Build config array từ modules (backend/frontend tách nếu cần)
+        foreach (['backend', 'frontend'] as $section) {
+            static::$configs[$section] = [];
+            foreach ($modulesWithCategories as $category) {
+                foreach ($category['modules'] as $module) {
+                    $moduleKey = $module['name'] ?? Str::kebab($module['label'] ?? 'unknown'); // Sửa: Dùng 'name' (là kebab_name), fallback nếu thiếu
+                    static::$configs[$section][$moduleKey] = [
+                        'title' => $module['label'] ?? 'Unknown Module',
+                        'url' => "{$moduleKey}.index", // Route name không prefix, match 'user.index'
+                        'children' => array_map(function ($child) {
+                            return [
+                                'title' => $child['label'],
+                                'url' => $child['name'],
+                            ];
+                        }, $module['children'] ?? []),
+                    ];
+                }
+            }
+        }
+
+        // Load thêm từ thư mục config/breadcrumbs/{section}/ (override nếu tồn tại)
         $sections = ['backend', 'frontend'];
         foreach ($sections as $section) {
             $breadcrumbDir = config_path('breadcrumbs/' . $section . '/');
             if (is_dir($breadcrumbDir)) {
                 foreach (glob($breadcrumbDir . '*.php') as $file) {
                     $moduleName = basename($file, '.php');
-                    $this->config[$section][$moduleName] = include $file;
+                    $fileConfig = include $file;
+                    static::$configs[$section][$moduleName] = array_merge(
+                        static::$configs[$section][$moduleName] ?? [],
+                        $fileConfig
+                    );
                 }
             }
         }
     }
 
-    public function generate($section = 'backend')
+    /**
+     * Generate breadcrumbs for current route.
+     *
+     * @param string $section 'backend' or 'frontend'
+     * @return array
+     */
+    public function generate(string $section = 'backend'): array
     {
         $currentRoute = Route::currentRouteName();
-        $parameters = Route::current()->parameters();
-        $cacheKey = 'breadcrumbs_' . $section . '_' . $currentRoute . '_' . md5(json_encode($parameters));
+        if (isset(static::$generated[$currentRoute])) {
+            return static::$generated[$currentRoute]; // Cache nội bộ per request
+        }
 
-        return Cache::remember($cacheKey, 3600, function () use ($section, $currentRoute) {
-            $breadcrumbs = [];
+        $breadcrumbs = [];
 
-            // Ưu tiên sử dụng cấu hình từ config/breadcrumbs
-            if (!$this->buildBreadcrumbs($this->config[$section] ?? [], $currentRoute, $breadcrumbs)) {
-                // Nếu không tìm thấy trong config, thử tự động sinh từ ModuleConst
-                $this->autoBuildFromModuleConst($currentRoute, $breadcrumbs, $section);
-            }
+        // Build từ config (ưu tiên)
+        if ($this->buildFromConfig(static::$configs[$section] ?? [], $currentRoute, $breadcrumbs)) {
+            // OK
+        } else {
+            // Fallback auto từ route hierarchy + ModuleConst
+            $this->autoBuildFromRoute($currentRoute, $breadcrumbs);
+        }
 
-            // Thêm breadcrumb động nếu cần (ví dụ: post.show, post.edit)
-            if (empty($breadcrumbs)) {
-                $this->buildDynamicBreadcrumbs($currentRoute, $breadcrumbs);
-            }
+        // Dynamic cho show/edit/delete/index (lấy title từ model nếu có)
+        if (empty($breadcrumbs)) {
+            $this->buildDynamic($currentRoute, $breadcrumbs);
+        }
 
-            // Thêm breadcrumb dashboard mặc định
-            array_unshift($breadcrumbs, [
-                'title' => __('dashboard'),
-                'url' => route('dashboard'),
-            ]);
+        // Thêm dashboard/home mặc định ở đầu nếu là backend/frontend
+        array_unshift($breadcrumbs, [
+            'title' => __('dashboard'),
+            'url' => route($section === 'backend' ? 'dashboard' : 'home'),
+        ]);
 
-            return $breadcrumbs;
-        });
+        static::$generated[$currentRoute] = $breadcrumbs; // Cache per request
+        return $breadcrumbs;
     }
 
-    protected function buildBreadcrumbs($config, $currentRoute, &$breadcrumbs, $parentUrl = '')
+    /**
+     * Build breadcrumbs recursively from config.
+     */
+    protected function buildFromConfig(array $config, string $currentRoute, array &$breadcrumbs, string $parentUrl = ''): bool
     {
-        foreach ($config as $module => $moduleConfig) {
-            foreach ($moduleConfig as $key => $item) {
-                if (isset($item['url']) && $item['url'] === $currentRoute) {
-                    $breadcrumbs[] = [
-                        'title' => __($item['title']),
-                        'url' => $this->generateRouteUrl($item['url']),
-                    ];
-                    return true;
-                }
+        foreach ($config as $key => $item) {
+            $itemUrl = $item['url'] ?? null;
+            if ($itemUrl === $currentRoute) {
+                $breadcrumbs[] = [
+                    'title' => __($item['title']),
+                    'url' => route($itemUrl, Route::current()->parameters()),
+                ];
+                return true;
+            }
 
-                if (isset($item['children'])) {
-                    if ($this->buildBreadcrumbs([$item['children']], $currentRoute, $breadcrumbs, $item['url'] ?? '')) {
-                        if (isset($item['url'])) {
-                            array_unshift($breadcrumbs, [
-                                'title' => __($item['title']),
-                                'url' => $this->generateRouteUrl($item['url']),
-                            ]);
-                        }
-                        return true;
-                    }
+            if (isset($item['children']) && $this->buildFromConfig($item['children'], $currentRoute, $breadcrumbs, $itemUrl)) {
+                if ($itemUrl) {
+                    array_unshift($breadcrumbs, [
+                        'title' => __($item['title']),
+                        'url' => route($itemUrl),
+                    ]);
                 }
+                return true;
             }
         }
         return false;
     }
 
-    protected function autoBuildFromModuleConst($currentRoute, &$breadcrumbs, $section)
+    /**
+     * Auto build breadcrumbs from route hierarchy and ModuleConst.
+     */
+    protected function autoBuildFromRoute(string $currentRoute, array &$breadcrumbs): void
     {
-        $modulesWithCategories = ModuleConst::getModulesWithCategories();
-        $routeParts = explode('.', $currentRoute);
-        $moduleNameFromRoute = $routeParts[0];
+        $routeParts = explode('.', $currentRoute); // e.g., ['user', 'index']
+        if (count($routeParts) < 1) return;
 
+        $moduleName = array_shift($routeParts); // e.g., 'user'
+
+        // Tìm module từ ModuleConst (match kebab_name)
+        $modulesWithCategories = ModuleConst::getModulesWithCategories();
+        $found = false;
         foreach ($modulesWithCategories as $category) {
             foreach ($category['modules'] as $module) {
-                $moduleKey = $module['full_name'] ?? $module['label'];
+                if (($module['name'] ?? '') === $moduleName) { // Sửa: Dùng 'name' an toàn, check isset
+                    // Thêm category nếu cần (link # nếu không có route category)
+                    $breadcrumbs[] = ['title' => __($category['label']), 'url' => '#'];
 
-                // Map moduleName giống logic trong ModuleServiceProvider để khớp route prefix
-                if (str_ends_with($moduleKey, '_post_management')) {
-                    $mappedModule = str_replace('_post_management', '-posts', $moduleKey);
-                    $mappedModule = str_replace('_', '-', $mappedModule);
-                } elseif (str_ends_with($moduleKey, '_listing_management')) {
-                    $mappedModule = str_replace('_listing_management', '-listings', $moduleKey);
-                    $mappedModule = str_replace('_', '-', $mappedModule);
-                } else {
-                    $mappedModule = str_replace('_management', '', $moduleKey);
-                    $mappedModule = str_replace('_', '-', $mappedModule); // Thêm dòng này để thay thế '_' thành '-'
-                }
-
-                if ($mappedModule === $moduleNameFromRoute && str_starts_with($currentRoute, $moduleNameFromRoute . '.')) {
-                    // Thêm breadcrumb cho category nếu cần
-                    $categoryLabel = __($category['label']) ?: $category['label'];
+                    // Thêm module index
                     $breadcrumbs[] = [
-                        'title' => $categoryLabel,
-                        'url' => '#',
+                        'title' => __($module['label']),
+                        'url' => route("{$moduleName}.index"), // Không prefix, match 'user.index'
                     ];
 
-                    // Thêm breadcrumb cho module cha
-                    $moduleLabel = __($module['label']) ?: $module['label'];
-                    $breadcrumbs[] = [
-                        'title' => $moduleLabel,
-                        'url' => $this->generateRouteUrl($moduleNameFromRoute . '.index'),
-                    ];
-
-                    // Xử lý các phần nested (subs và action)
-                    $remainingParts = array_slice($routeParts, 1);
-                    $currentUrlBase = $moduleNameFromRoute;
-                    $subPath = ''; // Để xây dựng key dịch cho sub
-
-                    while (count($remainingParts) > 1) { // Xử lý subs (tất cả trừ action cuối)
-                        $sub = array_shift($remainingParts);
-                        $subPath .= ($subPath ? '.' : '') . $sub;
-                        $subLabel = __($module['label'] . '.' . $subPath) ?: ucfirst($sub);
-                        $subUrl = $this->generateRouteUrl($currentUrlBase . '.' . $sub . '.index');
+                    // Xử lý sub-parts và action
+                    $currentBase = $moduleName;
+                    while (count($routeParts) > 1) {
+                        $sub = array_shift($routeParts);
                         $breadcrumbs[] = [
-                            'title' => $subLabel,
-                            'url' => $subUrl,
+                            'title' => __(Str::title($sub)),
+                            'url' => route("{$currentBase}.{$sub}.index"),
                         ];
-                        $currentUrlBase .= '.' . $sub;
+                        $currentBase .= ".{$sub}";
                     }
 
-                    // Xử lý action cuối cùng
-                    if (!empty($remainingParts)) {
-                        $action = $remainingParts[0];
-                        if ($action !== 'index') {
-                            $actionLabelKey = $module['label'] . '.' . ($subPath ? $subPath . '.' : '') . $action;
-                            $actionLabel = __($actionLabelKey) ?: ucfirst($action);
-                            $breadcrumbs[] = [
-                                'title' => $actionLabel,
-                                'url' => route($currentRoute, Route::current()->parameters()),
-                            ];
-                        }
+                    // Action cuối (nếu != index)
+                    if (!empty($routeParts) && $routeParts[0] !== 'index') {
+                        $action = $routeParts[0];
+                        $breadcrumbs[] = [
+                            'title' => __(Str::title($action)),
+                            'url' => route($currentRoute, Route::current()->parameters()),
+                        ];
                     }
 
-                    return true;
+                    $found = true;
+                    break 2;
                 }
             }
         }
-        return false;
+
+        // Fallback generic nếu không tìm thấy trong ModuleConst
+        if (!$found) {
+            $currentBase = '';
+            foreach ($routeParts as $part) {
+                $currentBase .= ($currentBase ? '.' : '') . $part;
+                $title = __(Str::title($part));
+                $url = route($currentBase) ?? '#';
+                $breadcrumbs[] = ['title' => $title, 'url' => $url];
+            }
+        }
     }
 
-    protected function buildDynamicBreadcrumbs($currentRoute, &$breadcrumbs)
+    /**
+     * Build dynamic breadcrumbs for show/edit/delete/index (lấy title từ model nếu có).
+     */
+    protected function buildDynamic(string $currentRoute, array &$breadcrumbs): void
     {
         $routeParts = explode('.', $currentRoute);
-        if (count($routeParts) < 2) {
-            return false;
-        }
+        if (count($routeParts) < 2) return;
 
-        $module = $routeParts[0];
-        $action = array_pop($routeParts); // Lấy action cuối
-        $subPath = implode('.', $routeParts); // Phần còn lại là module.sub (nếu có)
+        $module = implode('.', array_slice($routeParts, 0, -1)); // e.g., 'user'
+        $action = end($routeParts); // e.g., 'index'
 
-        if (in_array($action, ['show', 'edit', 'permissions', 'delete'])) {
-            // Lấy ID từ route parameters (giả sử param cuối là id)
-            $parameters = Route::current()->parameters();
-            $id = end($parameters); // Lấy param cuối cùng
+        $parameters = Route::current()->parameters();
+        $id = end($parameters) ?? null; // Giả sử param cuối là id (nếu có)
 
-            // Lấy model dựa trên subPath hoặc module
-            $modelName = ucfirst(str_replace(['-', '.'], '', $subPath ? $subPath : $module));
-            $modelClass = 'App\\Models\\' . $modelName;
+        $modelName = Str::studly(Str::singular($module)); // e.g., 'User'
+        $modelClass = "App\\Models\\{$modelName}";
 
-            if (class_exists($modelClass)) {
+        if (class_exists($modelClass)) {
+            if (in_array($action, ['show', 'edit', 'delete']) && $id) {
                 $item = $modelClass::find($id);
                 if ($item) {
-                    // Thêm breadcrumb động
                     $breadcrumbs[] = [
-                        'title' => $item->name ?? $item->title ?? 'Item ' . $id,
+                        'title' => $item->name ?? $item->title ?? "Item #{$id}",
                         'url' => route($currentRoute, $parameters),
                     ];
-
-                    // Thêm parent breadcrumb (list của sub hoặc module)
-                    $parentRoute = ($subPath ? $subPath : $module) . '.index';
-                    array_unshift($breadcrumbs, [
-                        'title' => __(ucfirst(str_replace(['-', '.'], ' ', $subPath ? $subPath : $module)) . ' List'),
-                        'url' => $this->generateRouteUrl($parentRoute),
-                    ]);
-
-                    return true;
                 }
+            } elseif ($action === 'index') {
+                // Cho index, chỉ thêm list title (không cần model instance)
+                $breadcrumbs[] = [
+                    'title' => __(Str::title(Str::plural($module))),
+                    'url' => route($currentRoute),
+                ];
             }
+        } else {
+            // Fallback nếu không có model
+            $breadcrumbs[] = [
+                'title' => __(Str::title($action)),
+                'url' => route($currentRoute, $parameters),
+            ];
+            array_unshift($breadcrumbs, [
+                'title' => __(Str::title($module)),
+                'url' => route("{$module}.index"),
+            ]);
         }
-
-        return false;
-    }
-
-    protected function generateRouteUrl($routeName)
-    {
-        $route = Route::getRoutes()->getByName($routeName);
-        if (!$route) {
-            return '#';
-        }
-
-        preg_match_all('/\{([^\}]+)\}/', $route->uri(), $matches);
-        $paramInfos = $matches[1] ?? [];
-
-        $requiredParams = [];
-        $optionalParams = [];
-        foreach ($paramInfos as $paramInfo) {
-            if (str_ends_with($paramInfo, '?')) {
-                $name = rtrim($paramInfo, '?');
-                $optionalParams[] = $name;
-            } else {
-                $name = $paramInfo;
-                $requiredParams[] = $name;
-            }
-        }
-
-        $currentParams = Route::current()->parameters();
-        $genParams = [];
-
-        foreach ($requiredParams as $name) {
-            if (isset($currentParams[$name])) {
-                $genParams[$name] = $currentParams[$name];
-            } else {
-                return '#'; // Missing required param
-            }
-        }
-
-        foreach ($optionalParams as $name) {
-            if (isset($currentParams[$name])) {
-                $genParams[$name] = $currentParams[$name];
-            }
-        }
-
-        return route($routeName, $genParams);
     }
 }

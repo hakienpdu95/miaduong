@@ -34,7 +34,11 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withProviders([
-        // \App\Services\ModuleServiceProvider::class,
+        \App\Providers\ViewServiceProvider::class,
+        \App\Services\ModuleServiceProvider::class, 
         \App\Providers\MorphMapServiceProvider::class,
+    ])
+    ->withSingletons([
+        \App\Services\BreadcrumbService::class,
     ])
     ->create();

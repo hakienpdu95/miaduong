@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\File;
  */
 final class ModuleConst
 {
-    // Permission actions (giữ nguyên như cách của bạn)
+    // Permission actions (full list từ code gốc)
     public const ACTION_VIEW = 'view';
     public const ACTION_CREATE = 'create';
     public const ACTION_EDIT = 'edit';
@@ -22,7 +22,6 @@ final class ModuleConst
     /**
      * Load all module configurations dynamically from module directories.
      * Mỗi module có file config.php trong thư mục của nó (e.g., app/Http/Controllers/Backend/Role/config.php).
-     * Điều này làm cấu trúc tốt hơn: config nằm ngay trong folder module, dễ quản lý và di chuyển.
      */
     public static function loadConfigs(): void
     {
@@ -52,6 +51,18 @@ final class ModuleConst
     }
 
     /**
+     * Get all module names (full names like 'role_management').
+     * Used for seeding or listing modules.
+     *
+     * @return array
+     */
+    public static function getModules(): array
+    {
+        self::loadConfigs();
+        return array_keys(self::$moduleConfigs); // Trả về array unique full module names
+    }
+
+    /**
      * Get all modules with their categories, labels, icons, and children.
      *
      * @return array
@@ -63,7 +74,13 @@ final class ModuleConst
 
         foreach (self::$moduleConfigs as $fullModuleName => $config) {
             $categoryKey = $config['category'] ?? 'uncategorized';
-            $categories[$categoryKey]['label'] = $config['category_label'] ?? ucfirst(str_replace('_', ' ', $categoryKey));
+            if (!isset($categories[$categoryKey])) {
+                $categories[$categoryKey] = [
+                    'key' => $categoryKey,
+                    'label' => $config['category_label'] ?? ucfirst(str_replace('_', ' ', $categoryKey)),
+                    'modules' => [],
+                ];
+            }
             $categories[$categoryKey]['modules'][] = [
                 'name' => $config['kebab_name'],
                 'label' => $config['label'],
@@ -101,7 +118,7 @@ final class ModuleConst
 
             if (!empty($authorizedModules)) {
                 $categories[] = [
-                    'key' => $category['key'] ?? $category['label'],
+                    'key' => $category['key'],
                     'label' => $category['label'],
                     'modules' => $authorizedModules,
                 ];

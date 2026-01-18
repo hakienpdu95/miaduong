@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Providers;
+namespace App\Services; // Hoặc App\Services nếu namespace cũ
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
@@ -29,7 +29,7 @@ class ModuleServiceProvider extends ServiceProvider
                 Route::get('/dashboard', [\App\Http\Controllers\Backend\DashboardController::class, 'index'])->name('dashboard');
 
                 foreach ($moduleDirs as $dir) {
-                    $modulePascal = basename($dir); // e.g., 'PregnancyWeek'
+                    $modulePascal = basename($dir); // e.g., 'User'
                     $moduleSnake = strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $modulePascal));
                     $moduleKebab = str_replace('_', '-', $moduleSnake);
                     $fullModuleName = $moduleSnake . '_management';
@@ -44,14 +44,14 @@ class ModuleServiceProvider extends ServiceProvider
                     $controller = "{$namespace}\\{$modulePascal}Controller";
 
                     if (!class_exists($controller)) {
-                        continue; // Bỏ qua nếu không có controller
+                        continue; // Bỏ qua nếu không có controller (ngăn lỗi cho module chưa hoàn thiện)
                     }
 
-                    // Đăng ký routes CRUD với resource (tối ưu, hỗ trợ full CRUD)
+                    // Đăng ký routes CRUD với resource (sử dụng parameter {id} để tránh "{}")
                     Route::prefix($moduleKebab)
                         ->name("{$moduleKebab}.")
                         ->group(function () use ($controller, $fullModuleName) {
-                            Route::resource('/', $controller)
+                            Route::resource('/', $controller)->parameters(['' => 'id']) // Force parameter là {id} thay vì {}
                                 ->middleware([
                                     'index' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_VIEW,
                                     'create' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_CREATE,
