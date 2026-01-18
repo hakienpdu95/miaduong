@@ -19,11 +19,6 @@
             </div>
         </div>
         <ul class="header-content-right">
-            <li class="header-element header-fullscreen">
-                <a onclick="openFullscreen();" href="javascript:void(0);" class="header-link">
-                    <i class="fa-light fa-expand"></i>
-                </a>
-            </li>
             <li class="header-element nav-item dropdown">
                 <a class="header-link dropdown-toggle" href="javascript:void(0);" id="mainHeaderProfile" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                     <div class="d-flex align-items-center">

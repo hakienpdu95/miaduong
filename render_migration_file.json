@@ -8,7 +8,7 @@
     "is_active///boolean///__///NOT_NULL///true///->index()///Trạng thái vai trò",
     "created_at///timestamp///__///_NULL///NULL///__///Thời gian tạo",
     "updated_at///timestamp///__///_NULL///NULL///__///Thời gian cập nhật",
-    "__initial_data///insert///__///__///__///name:administrator,description:Quản lý toàn hệ thống - có quyền cài đặt hệ thống,priority:110,is_active:1;name:province,description:Quản lý cấp tỉnh - giám sát cấp xã và doanh nghiệp,priority:100,is_active:1;name:commune,description:Quản lý cấp xã - giám sát doanh nghiệp trong khu vực,priority:90,is_active:1;name:enterprise,description:Tài khoản doanh nghiệp - quản lý nhân viên và nội dung doanh nghiệp,priority:80,is_active:1;name:content_manager,description:Quản lý toàn bộ nội dung bài viết - danh mục và bình luận,priority:75,is_active:1;name:shop_manager,description:Quản lý sản phẩm - đơn hàng và báo cáo cửa hàng,priority:70,is_active:1;name:seo_manager,description:Quản lý SEO - metadata và tối ưu hóa tìm kiếm,priority:65,is_active:1;name:moderator,description:Quản lý bình luận và hỗ trợ duyệt nội dung,priority:60,is_active:1;name:employee,description:Tài khoản nhân viên - thực hiện nhiệm vụ được giao bởi doanh nghiệp,priority:50,is_active:1;name:editor,description:Chuyên tạo và chỉnh sửa nội dung - gửi duyệt trước khi xuất bản,priority:40,is_active:1;name:contributor,description:Tạo nội dung nhưng cần duyệt trước khi xuất bản,priority:30,is_active:1;name:subscriber,description:Người dùng đăng ký - chỉ xem nội dung và quản lý hồ sơ,priority:10,is_active:1///Dữ liệu vai trò mặc định"
+    "__initial_data///insert///__///__///__///name:administrator,description:Quản lý toàn hệ thống - có quyền cài đặt hệ thống,priority:110,is_active:1;name:warehouse_management,description:Quản lý kho,priority:100,is_active:1;name:foreman,description:Tài khoản quản đốc,priority:90,is_active:1///Dữ liệu vai trò mặc định"
   ], 
   [
     "users///__///__///Bảng lưu thông tin người dùng",
@@ -35,7 +35,6 @@
     "user_id///unsignedBigInteger///__///NOT_NULL///__///->constrained('users')->unique()///Người dùng",
     "province_code///char///2///_NULL///NULL///->references('province_code')->on('provinces')->onDelete('cascade')///Gán cho tài khoản cấp tỉnh",
     "ward_code///char///5///_NULL///NULL///->references('ward_code')->on('wards')->onDelete('cascade')///Gán cho tài khoản cấp xã",
-    "enterprise_id///unsignedBigInteger///__///_NULL///NULL///->constrained('enterprises')->onDelete('cascade')///Gán doanh nghiệp cho tài khoản",
     "phone///string///20///_NULL///NULL///__///Số điện thoại",
     "address///text///__///_NULL///NULL///__///Địa chỉ",
     "avatar///string///255///_NULL///NULL///__///URL ảnh đại diện",

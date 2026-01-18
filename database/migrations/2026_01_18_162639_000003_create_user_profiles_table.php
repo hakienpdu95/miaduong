@@ -16,7 +16,6 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id')->comment('Người dùng')->constrained('users')->unique();
             $table->char('province_code', 2)->nullable()->default(NULL)->comment('Gán cho tài khoản cấp tỉnh')->references('province_code')->on('provinces')->onDelete('cascade');
             $table->char('ward_code', 5)->nullable()->default(NULL)->comment('Gán cho tài khoản cấp xã')->references('ward_code')->on('wards')->onDelete('cascade');
-            $table->unsignedBigInteger('enterprise_id')->nullable()->default(NULL)->comment('Gán doanh nghiệp cho tài khoản')->constrained('enterprises')->onDelete('cascade');
             $table->string('phone', 20)->nullable()->default(NULL)->comment('Số điện thoại');
             $table->text('address')->nullable()->default(NULL)->comment('Địa chỉ');
             $table->string('avatar', 255)->nullable()->default(NULL)->comment('URL ảnh đại diện');
