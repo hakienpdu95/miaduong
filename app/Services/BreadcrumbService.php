@@ -30,7 +30,7 @@ class BreadcrumbService
             static::$configs[$section] = [];
             foreach ($modulesWithCategories as $category) {
                 foreach ($category['modules'] as $module) {
-                    $moduleKey = $module['name'] ?? Str::kebab($module['label'] ?? 'unknown'); // Sửa: Dùng 'name' (là kebab_name), fallback nếu thiếu
+                    $moduleKey = $module['name'] ?? Str::kebab($module['label'] ?? 'unknown'); // An toàn, fallback nếu thiếu key
                     static::$configs[$section][$moduleKey] = [
                         'title' => $module['label'] ?? 'Unknown Module',
                         'url' => "{$moduleKey}.index", // Route name không prefix, match 'user.index'
@@ -90,10 +90,10 @@ class BreadcrumbService
             $this->buildDynamic($currentRoute, $breadcrumbs);
         }
 
-        // Thêm dashboard/home mặc định ở đầu nếu là backend/frontend
+        // Thêm dashboard/home mặc định ở đầu nếu là backend/frontend (sửa dùng 'admin.dashboard')
         array_unshift($breadcrumbs, [
             'title' => __('dashboard'),
-            'url' => route($section === 'backend' ? 'dashboard' : 'home'),
+            'url' => route($section === 'backend' ? 'admin.dashboard' : 'home'), // Sửa match name mới
         ]);
 
         static::$generated[$currentRoute] = $breadcrumbs; // Cache per request
@@ -143,7 +143,7 @@ class BreadcrumbService
         $found = false;
         foreach ($modulesWithCategories as $category) {
             foreach ($category['modules'] as $module) {
-                if (($module['name'] ?? '') === $moduleName) { // Sửa: Dùng 'name' an toàn, check isset
+                if (($module['name'] ?? '') === $moduleName) { // An toàn, check isset
                     // Thêm category nếu cần (link # nếu không có route category)
                     $breadcrumbs[] = ['title' => __($category['label']), 'url' => '#'];
 
@@ -179,14 +179,15 @@ class BreadcrumbService
             }
         }
 
-        // Fallback generic nếu không tìm thấy trong ModuleConst
+        // Fallback generic nếu không tìm thấy trong ModuleConst (sửa thêm check Route::has để tránh error)
         if (!$found) {
             $currentBase = '';
             foreach ($routeParts as $part) {
-                $currentBase .= ($currentBase ? '.' : '') . $part;
+                $tempBase = $currentBase . ($currentBase ? '.' : '') . $part;
                 $title = __(Str::title($part));
-                $url = route($currentBase) ?? '#';
+                $url = Route::has($tempBase) ? route($tempBase) : '#'; // Sửa: Check has trước gọi route, fallback '#'
                 $breadcrumbs[] = ['title' => $title, 'url' => $url];
+                $currentBase = $tempBase;
             }
         }
     }
@@ -232,7 +233,7 @@ class BreadcrumbService
             ];
             array_unshift($breadcrumbs, [
                 'title' => __(Str::title($module)),
-                'url' => route("{$module}.index"),
+                'url' => Route::has("{$module}.index") ? route("{$module}.index") : '#', // Sửa tương tự, check has
             ]);
         }
     }

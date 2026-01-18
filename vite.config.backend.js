@@ -8,6 +8,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/bootstrap.css',
+                'resources/css/dataTables.css',
                 'resources/css/fontawesomepro.css',
                 'resources/css/toastify.css',
                 'resources/css/choices.css',
@@ -17,10 +18,11 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/css/custom.css',
                 'resources/css/fonts.css',
-                // 'resources/js/jquery.js',
+                'resources/js/jquery.js',
                 'resources/js/app.js',
                 'resources/js/lang.js',
                 'resources/js/toastify.js',
+                'resources/js/modules/dataTables.js',
                 'resources/js/modules/choices.js',
                 'resources/js/modules/suneditor.js',
                 'resources/js/modules/flatpickr.js',
@@ -76,7 +78,8 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 main: 'resources/js/app.js',
-                // jquery: 'resources/js/jquery.js',
+                jquery: 'resources/js/jquery.js',
+                dataTables: 'resources/js/modules/dataTables.js',
                 lang: 'resources/js/lang.js',
                 defaultmenu: 'resources/js/defaultmenu.min.js',
                 toastify: 'resources/js/toastify.js',
@@ -85,6 +88,7 @@ export default defineConfig({
                 flatpickr: 'resources/js/modules/flatpickr.js',
                 tagify: 'resources/js/modules/tagify.js',
                 bootstrap_css: 'resources/css/bootstrap.css',
+                dataTables_css: 'resources/css/dataTables.css',
                 fontawesomepro_css: 'resources/css/fontawesomepro.css',
                 toastify_css: 'resources/css/toastify.css',
                 choices_css: 'resources/css/choices.css',
@@ -99,7 +103,8 @@ export default defineConfig({
                 entryFileNames: (chunkInfo) => {
                     const names = {
                         main: 'assets/app-common.[hash].js',
-                        // jquery: 'assets/jquery.[hash].js',
+                        jquery: 'assets/jquery.[hash].js',
+                        dataTables: 'assets/dataTables.[hash].js',
                         lang: 'assets/lang.[hash].js',
                         defaultmenu: 'assets/defaultmenu.[hash].js',
                         toastify: 'assets/toastify.[hash].js',
@@ -114,6 +119,7 @@ export default defineConfig({
                 assetFileNames: (assetInfo) => {
                     const cssNames = {
                         'bootstrap.css': 'assets/bootstrap.[hash].css',
+                        'dataTables.css': 'assets/dataTables.[hash].css',
                         'fontawesomepro.css': 'assets/fontawesomepro.[hash].css',
                         'toastify.css': 'assets/toastify.[hash].css',
                         'choices.css': 'assets/choices.[hash].css',

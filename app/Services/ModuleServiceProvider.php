@@ -26,7 +26,7 @@ class ModuleServiceProvider extends ServiceProvider
             ->middleware(['web', 'auth:web'])
             ->group(function () use ($moduleDirs) {
                 // Route dashboard (giả sử dùng controller)
-                Route::get('/dashboard', [\App\Http\Controllers\Backend\DashboardController::class, 'index'])->name('dashboard');
+                Route::get('/dashboard', [\App\Http\Controllers\Backend\DashboardController::class, 'index'])->name('admin.dashboard');
 
                 foreach ($moduleDirs as $dir) {
                     $modulePascal = basename($dir); // e.g., 'User'

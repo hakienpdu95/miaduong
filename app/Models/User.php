@@ -28,7 +28,6 @@ class User extends Authenticatable
         'username',
         'email',
         'password',
-        'email_verified_at',
         'managed_by',
         'is_active',
     ];
@@ -40,9 +39,6 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
-        'remember_token',
-        'two_factor_secret',
-        'two_factor_recovery_codes',
     ];
 
     /**
@@ -53,7 +49,6 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];

@@ -68,7 +68,7 @@ class LoginController extends Controller
             Log::info('Login successful for user: ' . $request->identifier);
 
             // Redirect đến dashboard backend
-            return redirect()->intended(route('dashboard'));
+            return redirect()->intended(route('admin.dashboard'));
         }
 
         // Nếu login thất bại, log và throw exception
