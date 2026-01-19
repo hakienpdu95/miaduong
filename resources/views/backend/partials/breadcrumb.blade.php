@@ -1,6 +1,5 @@
 <div class="my-4 page-header-breadcrumb d-flex align-items-center justify-content-between flex-wrap gap-2 {{ $customStyle ?? ''}}">
     <div>
-        <h1 class="page-title fw-semibold fs-4 mb-2">Page Title</h1>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
                 @forelse ($breadcrumbs ?? [] as $index => $breadcrumb)

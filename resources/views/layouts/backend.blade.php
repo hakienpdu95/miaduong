@@ -15,16 +15,22 @@
     <!-- Load fonts CSS -->
     @vite('resources/css/fonts.css', 'build/backend', ['defer' => true])
 
-    @vite([
-        'resources/css/toastify.css',
-        'resources/css/bootstrap.css',
-        'resources/css/fontawesomepro.css',
-        'resources/css/choices.css',
+    @vite([ 
+        'resources/css/toastify.css', 
+        'resources/css/bootstrap.css', 
+        'resources/css/fontawesomepro.css', 
+        'resources/css/choices.css', 
         'resources/css/app.css',
-        'resources/js/toastify.js',
-        'resources/js/app.js',
-        'resources/js/defaultmenu.min.js',
-    ],'build/backend')
+    ], 'build/backend')
+
+    @vite('resources/js/jquery.js', 'build/backend') 
+
+    @vite([ 
+        'resources/js/toastify.js', 
+        'resources/js/app.js', 
+        'resources/js/defaultmenu.min.js', 
+    ], 'build/backend', ['defer' => true, 'async' => true])
+
     @stack('styles') 
 </head>
 <body>
