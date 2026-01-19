@@ -3,6 +3,18 @@
 @section('content') 
 <div class="row"> 
     <div class="col-md-12"> 
+    	@if (session('success')) 
+            <div class="alert alert-success alert-dismissible fade show mb-4" role="alert"> 
+                {{ session('success') }} 
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> 
+            </div> 
+        @endif 
+        @if (session('error')) 
+            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert"> 
+                {{ session('error') }} 
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> 
+            </div> 
+        @endif
         <div class="card mb-4"> 
             <div class="card-body"> 
                 <form id="filter-form"> 
@@ -30,7 +42,6 @@
                 <table id="units-table" class="table table-bordered table-striped"> 
                     <thead> 
                         <tr> 
-                            <th>ID</th> 
                             <th>Mã đơn vị</th> 
                             <th>Tên đơn vị</th> 
                             <th>Tên quản đốc</th> 
@@ -67,7 +78,6 @@
                         } 
                     }, 
                     columns: [ 
-                        { data: 'id', name: 'id' }, 
                         { data: 'code', name: 'code' }, 
                         { data: 'name', name: 'name' }, 
                         { data: 'supervisor_name', name: 'supervisor_name' }, 
