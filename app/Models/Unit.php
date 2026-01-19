@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 
 class Unit extends Model
 {
@@ -27,5 +28,15 @@ class Unit extends Model
     public function equipments()
     {
         return $this->hasMany(Equipment::class, 'unit_id');
+    }
+
+    public function getFormattedCreatedAtAttribute()
+    {
+        return $this->created_at ? Carbon::parse($this->created_at)->format('d-m-Y') : null;
+    }
+
+    public function getFormattedUpdatedAtAttribute()
+    {
+        return $this->updated_at ? Carbon::parse($this->updated_at)->format('d-m-Y') : null;
     }
 }

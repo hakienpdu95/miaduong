@@ -63,10 +63,4 @@ class UnitController extends Controller
         $unit->update($request->validated());
         return redirect()->route('unit.index');
     }
-
-    public function destroy(Unit $unit)
-    {
-        $unit->delete();
-        return redirect()->route('unit.index');
-    }
 }

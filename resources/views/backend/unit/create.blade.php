@@ -5,7 +5,7 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
-                    <form id="unit-form" action="{{ route('unit.store') }}" method="POST" novalidate> <!-- Thêm novalidate để disable browser validate -->
+                    <form id="unit-form" action="{{ route('unit.store') }}" method="POST" novalidate>
                         @csrf
 
                         <div class="mb-3">
@@ -48,53 +48,53 @@
             </div>
         </div>
     </div>
-
-	@push('styles')
-	    @vite([ 'resources/css/suneditor.css' ], 'build/backend')
-	@endpush
-
-	@push('scripts')
-	    @vite([ 'resources/js/modules/suneditor.js'], 'build/backend')
-	    <script>
-	    window.addEventListener('load', function() {
-			$(document).ready(function() {
-			    // Init suneditor nếu cần...
-
-			    $('#unit-form').on('submit', function(e) {
-			        let valid = true;
-			        const requiredFields = ['name', 'supervisor_name']; // Required fields
-			        const errors = []; // Collect errors to show one toast if multiple
-
-			        requiredFields.forEach(field => {
-			            const input = $('#' + field);
-			            if (!input.val().trim()) {
-			                valid = false;
-			                errors.push(`${input.prev('label').text()} là bắt buộc!`);
-			                input.addClass('is-invalid'); // Optional: Add Bootstrap invalid class
-			            } else {
-			                input.removeClass('is-invalid');
-			            }
-			        });
-
-			        if (!valid) {
-			            e.preventDefault(); // Prevent submit
-			            // Show one toast with all errors (or loop show multiple)
-			            Toastify({
-			                text: errors.join('\n'), // Join errors for one toast
-			                duration: 5000,
-			                close: true,
-			                gravity: "top",
-			                position: "right",
-			                style: { background: "#dc3545" },
-			            }).showToast();
-			            $('#' + requiredFields[0]).focus(); // Focus first invalid
-			        } else {
-			            // Valid → submit to server
-			        }
-			    });
-			});	    	
-	    });
-
-		</script>
-	@endpush
 @endsection
+
+@push('styles')
+    @vite([ 'resources/css/suneditor.css' ], 'build/backend')
+@endpush
+
+@push('scripts')
+    @vite([ 'resources/js/modules/suneditor.js'], 'build/backend')
+    <script>
+    window.addEventListener('load', function() {
+		$(document).ready(function() {
+		    // Init suneditor nếu cần...
+
+		    $('#unit-form').on('submit', function(e) {
+		        let valid = true;
+		        const requiredFields = ['name', 'supervisor_name']; // Required fields
+		        const errors = []; // Collect errors to show one toast if multiple
+
+		        requiredFields.forEach(field => {
+		            const input = $('#' + field);
+		            if (!input.val().trim()) {
+		                valid = false;
+		                errors.push(`${input.prev('label').text()} là bắt buộc!`);
+		                input.addClass('is-invalid'); // Optional: Add Bootstrap invalid class
+		            } else {
+		                input.removeClass('is-invalid');
+		            }
+		        });
+
+		        if (!valid) {
+		            e.preventDefault(); // Prevent submit
+		            // Show one toast with all errors (or loop show multiple)
+		            Toastify({
+		                text: errors.join('\n'), // Join errors for one toast
+		                duration: 5000,
+		                close: true,
+		                gravity: "top",
+		                position: "right",
+		                style: { background: "#dc3545" },
+		            }).showToast();
+		            $('#' + requiredFields[0]).focus(); // Focus first invalid
+		        } else {
+		            // Valid → submit to server
+		        }
+		    });
+		});	    	
+    });
+
+	</script>
+@endpush
