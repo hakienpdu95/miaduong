@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Role extends Model
 {
     protected $fillable = [
-        'name', 'description', 'priority', 'is_active',
+        'name', 'title', 'description', 'priority', 'is_active',
     ];
 
     protected $casts = [

@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('user_profiles', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedBigInteger('user_id')->comment('Người dùng')->constrained('users')->unique();
-            $table->char('province_code', 2)->nullable()->default(NULL)->comment('Gán cho tài khoản cấp tỉnh')->references('province_code')->on('provinces')->onDelete('cascade');
-            $table->char('ward_code', 5)->nullable()->default(NULL)->comment('Gán cho tài khoản cấp xã')->references('ward_code')->on('wards')->onDelete('cascade');
+            $table->enum('account_type', ['warehouse_manager','supervisor'])->default('supervisor')->comment('Loại tài khoản')->index();
+            $table->unsignedBigInteger('unit_id')->nullable()->default(NULL)->comment('Thuộc đơn vị sử dụng')->constrained('units')->onDelete('cascade');
             $table->string('phone', 20)->nullable()->default(NULL)->comment('Số điện thoại');
             $table->text('address')->nullable()->default(NULL)->comment('Địa chỉ');
             $table->string('avatar', 255)->nullable()->default(NULL)->comment('URL ảnh đại diện');
