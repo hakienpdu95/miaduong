@@ -13,9 +13,13 @@ class UnitController extends Controller
     public function datatable(Request $request)
     {
         $columns = ['id', 'code', 'name', 'supervisor_name', 'created_at'];
-        $query = Unit::select($columns);
+        $query = Unit::select($columns); 
 
-        // Custom filters
+        // Optional: Show soft deleted nếu param ?withTrashed=1
+        if ($request->filled('withTrashed')) {
+            $query->withTrashed();
+        }
+
         if ($request->filled('filter_code')) {
             $query->where('code', 'like', '%' . $request->filter_code . '%');
         }
@@ -29,20 +33,32 @@ class UnitController extends Controller
             })
             ->addColumn('actions', function ($unit) {
                 return '<a href="' . route('unit.edit', $unit->id) . '" class="btn btn-sm btn-primary me-1"><i class="fa-light fa-pen-to-square"></i></a>' .
-                       '<button class="btn btn-sm btn-danger delete-unit" data-id="' . $unit->id . '"><i class="fa-light fa-trash"></i></button>'; // Add delete button
+                       '<button class="btn btn-sm btn-danger delete-unit" data-id="' . $unit->id . '"><i class="fa-light fa-trash"></i></button>';
             })
             ->filterColumn('name', function ($query, $keyword) {
                 $query->where('name', 'like', "%{$keyword}%");
             })
             ->rawColumns(['actions'])
-            ->make(true);
+            ->make(true); 
     }
 
     public function destroy($id)
     {
         $unit = Unit::findOrFail($id);
-        $unit->delete(); // Soft delete
+
+        if (!auth()->user()->can('delete-unit')) {
+            return response()->json(['success' => false, 'message' => 'Không có quyền xóa.'], 403);
+        }
+
+        $unit->delete();
 
         return response()->json(['success' => true, 'message' => 'Đơn vị đã được xóa thành công.']);
     }
+
+    // Optional: Bulk delete nếu cần mở rộng (gọi via POST /api/units/bulk-delete with ids array)
+    // public function bulkDestroy(Request $request) {
+    //     $request->validate(['ids' => 'required|array']);
+    //     Unit::whereIn('id', $request->ids)->delete();
+    //     return response()->json(['success' => true, 'message' => 'Đã xóa các đơn vị thành công.']);
+    // }
 }

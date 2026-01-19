@@ -5,7 +5,7 @@
     <div class="col-md-12"> 
         <div class="card mb-4"> 
             <div class="card-body"> 
-                <form id="filter-form" class="mb-3"> 
+                <form id="filter-form"> 
                     <div class="row mb-3"> 
                         <div class="col-md-3"> 
                             <label for="filter_code">Mã đơn vị</label> 
@@ -17,11 +17,10 @@
                         </div>  
                     </div> 
                     <div class="row">
-                        <!-- Add more filters here --> 
                         <div class="col-md-3 align-self-end"> 
                             <button type="submit" class="btn btn-primary">Lọc</button> 
                             <button type="button" id="reset-filter" class="btn btn-secondary">Reset</button> 
-                        </div>                    	
+                        </div>
                     </div>
                 </form> 
             </div> 
@@ -59,7 +58,7 @@
                 let table = $('#units-table').DataTable({ 
                     processing: true, 
                     serverSide: true, 
-                    responsive: true, // Thêm: Auto responsive mobile 
+                    responsive: true, 
                     ajax: { 
                         url: '{{ route('api.units.datatable') }}', 
                         data: function(d) { 
@@ -84,7 +83,7 @@
                         paginate: { first: 'Đầu', last: 'Cuối', next: 'Tiếp', previous: 'Trước' } 
                     }, 
                     initComplete: function() { 
-                        // Debounce global search (thêm: Delay 300ms để giảm request khi type nhanh) 
+                        // Debounce global search 
                         let searchInput = $('.dataTables_filter input'); 
                         let searchWait = 0; 
                         searchInput.unbind().bind('input', function(e) { 
@@ -95,7 +94,12 @@
                     } 
                 }); 
 
-                // Handle filter form submit 
+                // Handle filter form submit with debounce (thêm: Delay 300ms cho form submit nếu change input) 
+                let filterTimeout; 
+                $('#filter-form input').on('input', function() { 
+                    clearTimeout(filterTimeout); 
+                    filterTimeout = setTimeout(function() { table.draw(); }, 300); 
+                }); 
                 $('#filter-form').on('submit', function(e) { 
                     e.preventDefault(); 
                     table.draw(); 
@@ -107,23 +111,22 @@
                     table.draw(); 
                 }); 
 
-                // Bổ sung delete action (AJAX + confirm) 
+                // Delete action 
                 $('#units-table').on('click', '.delete-unit', function() { 
                     let id = $(this).data('id'); 
-                    if (confirm('Bạn có chắc muốn xóa đơn vị này?')) { // Hoặc dùng sweetalert nếu có 
+                    if (confirm('Bạn có chắc muốn xóa đơn vị này?')) { 
                         $.ajax({ 
-                            url: '{{ route('api.units.destroy', '_id_') }}'.replace('_id_', id),
+                            url: '{{ route('api.units.destroy', '_id_') }}'.replace('_id_', id), 
                             type: 'DELETE', 
-                            data: { _token: '{{ csrf_token() }}' }, // CSRF for security 
+                            data: { _token: '{{ csrf_token() }}' }, 
                             success: function(response) { 
                                 if (response.success) { 
-                                    table.draw(false); // Reload without reset page/sort 
-                                    // Toast success nếu có toastify 
-                                    console.log('Deleted successfully'); 
+                                    table.draw(false); 
+                                    Toastify({ text: response.message, duration: 3000, style: { background: "green" } }).showToast(); 
                                 } 
                             }, 
                             error: function(xhr) { 
-                                alert('Lỗi khi xóa: ' + xhr.responseJSON.message); 
+                                Toastify({ text: 'Lỗi khi xóa: ' + xhr.responseJSON.message, duration: 3000, style: { background: "red" } }).showToast(); 
                             } 
                         }); 
                     } 
