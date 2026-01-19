@@ -75,3 +75,5 @@ php artisan cache:clear & php artisan route:clear & php artisan config:clear & p
 ## Chỉ chạy lệnh này khi muốn trở về git gần nhất trước đó, bỏ qua các thay đổi đang làm hiện tại
  git restore .
  git clean -fd
+
+## Chạy lệnh chèn data country: php artisan import:countries --force --chunk=1000
