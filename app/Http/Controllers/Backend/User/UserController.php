@@ -16,6 +16,11 @@ use Exception;
  */
 class UserController extends Controller
 {
+    public function index()
+    {
+        return view('backend.user.index');
+    }
+    
     /**
      * Show the form for creating a new resource.
      */
