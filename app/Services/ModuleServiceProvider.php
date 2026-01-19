@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services; // Hoặc App\Services nếu namespace cũ
+namespace App\Services;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +22,7 @@ class ModuleServiceProvider extends ServiceProvider
         // Quét động các module từ thư mục controllers
         $moduleDirs = glob(app_path('Http/Controllers/Backend/*'), GLOB_ONLYDIR);
 
+        // Đăng ký routes backend
         Route::prefix('admin')
             ->middleware(['web', 'auth:web'])
             ->group(function () use ($moduleDirs) {
@@ -42,7 +43,6 @@ class ModuleServiceProvider extends ServiceProvider
                     // Namespace cho controller
                     $namespace = "App\\Http\\Controllers\\Backend\\{$modulePascal}";
                     $controller = "{$namespace}\\{$modulePascal}Controller";
-
                     if (!class_exists($controller)) {
                         continue; // Bỏ qua nếu không có controller (ngăn lỗi cho module chưa hoàn thiện)
                     }
@@ -68,6 +68,55 @@ class ModuleServiceProvider extends ServiceProvider
                     if (file_exists($routeFile)) {
                         Route::group(['prefix' => $moduleKebab, 'name' => "{$moduleKebab}."], function () use ($routeFile) {
                             require $routeFile;
+                        });
+                    }
+                }
+            });
+
+        // Đăng ký routes API (sử dụng middleware 'web' để hỗ trợ CSRF và session cho backend AJAX)
+        Route::prefix('api')
+            ->middleware(['web', 'auth:web']) // Sử dụng 'web' để có CSRF, session; thay vì 'api'
+            ->group(function () use ($moduleDirs) {
+                foreach ($moduleDirs as $dir) {
+                    $modulePascal = basename($dir); // e.g., 'User'
+                    $moduleSnake = strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $modulePascal));
+                    $moduleKebab = str_replace('_', '-', $moduleSnake);
+                    $fullModuleName = $moduleSnake . '_management';
+
+                    // Kiểm tra nếu module hợp lệ (có config)
+                    if (!ModuleConst::isValidModule($fullModuleName)) {
+                        continue;
+                    }
+
+                    // Namespace cho API controller (giả sử App\Http\Controllers\Api\{ModulePascal}Controller)
+                    $apiNamespace = "App\\Http\\Controllers\\Api";
+                    $apiController = "{$apiNamespace}\\{$modulePascal}Controller";
+                    if (!class_exists($apiController)) {
+                        continue; // Bỏ qua nếu không có API controller
+                    }
+
+                    // Đăng ký API routes với middleware check.permission
+                    Route::prefix($moduleKebab)
+                        ->name("api.{$moduleKebab}.")
+                        ->group(function () use ($apiController, $fullModuleName) {
+                            Route::get('/datatable', [$apiController, 'datatable'])->name('datatable')
+                                ->middleware("check.permission:{$fullModuleName}," . ModuleConst::ACTION_VIEW);
+
+                            Route::post('/{id}/toggle-active', [$apiController, 'toggleActive'])->name('toggle-active')
+                                ->middleware("check.permission:{$fullModuleName}," . ModuleConst::ACTION_EDIT);
+
+                            Route::post('/{id}/reset-password', [$apiController, 'resetPassword'])->name('reset-password')
+                                ->middleware("check.permission:{$fullModuleName}," . ModuleConst::ACTION_EDIT);
+
+                            Route::delete('/{id}', [$apiController, 'destroy'])->name('destroy')
+                                ->middleware("check.permission:{$fullModuleName}," . ModuleConst::ACTION_DELETE);
+                        });
+
+                    // Hỗ trợ routes API tùy chỉnh per module (tùy chọn, ví dụ api_routes.php trong dir)
+                    $apiRouteFile = $dir . '/api_routes.php';
+                    if (file_exists($apiRouteFile)) {
+                        Route::group(['prefix' => $moduleKebab, 'name' => "api.{$moduleKebab}."], function () use ($apiRouteFile) {
+                            require $apiRouteFile;
                         });
                     }
                 }

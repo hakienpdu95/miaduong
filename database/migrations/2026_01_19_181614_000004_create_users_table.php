@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->bigIncrements('id')->comment('Khóa chính');
-            $table->string('name', 255)->comment('Tên người dùng');
-            $table->string('username', 255)->nullable()->default(NULL)->comment('Tên đăng nhập (cho đăng nhập thủ công)')->unique()->index();
+            $table->string('name', 255)->nullable()->default(NULL)->comment('Tên người dùng');
+            $table->string('username', 255)->comment('Tên đăng nhập (cho đăng nhập thủ công)')->unique()->index();
             $table->string('email', 255)->nullable()->default(NULL)->comment('Email người dùng (cho phép NULL cho tài khoản mạng xã hội không có email)')->unique()->index();
             $table->string('password', 255)->nullable()->default(NULL)->comment('Mật khẩu (cho phép NULL cho tài khoản mạng xã hội)');
             $table->unsignedBigInteger('managed_by')->nullable()->default(NULL)->comment('Người quản lý')->constrained('users')->onDelete('set null');

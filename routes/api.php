@@ -11,4 +11,6 @@ Route::middleware('api')->group(function () {
 
     Route::get('/users/datatable', [UserController::class, 'datatable'])->name('api.users.datatable');
     Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('api.users.destroy');
+    Route::post('/users/toggle-active', [UserController::class, 'toggleActive'])->name('api.users.toggle-active');
+    Route::post('/users/reset-password', [UserController::class, 'resetPassword'])->name('api.users.reset-password');
 });

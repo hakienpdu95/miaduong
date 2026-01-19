@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('user_profiles', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedBigInteger('user_id')->comment('Người dùng')->constrained('users')->unique();
-            $table->enum('account_type', ['warehouse_manager','supervisor'])->default('supervisor')->comment('Loại tài khoản')->index();
+            $table->enum('account_type', ['warehouse_management','foreman'])->default('foreman')->comment('Loại tài khoản')->index();
             $table->unsignedBigInteger('unit_id')->nullable()->default(NULL)->comment('Thuộc đơn vị sử dụng')->constrained('units')->onDelete('cascade');
             $table->string('phone', 20)->nullable()->default(NULL)->comment('Số điện thoại');
             $table->text('address')->nullable()->default(NULL)->comment('Địa chỉ');

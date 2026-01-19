@@ -81,7 +81,7 @@
                 serverSide: true,
                 responsive: true,
                 ajax: {
-                    url: '{{ route('api.users.datatable') }}',
+                    url: '{{ route('api.user.datatable') }}',
                     data: function(d) {
                         d.filter_username = $('#filter_username').val();
                         d.filter_name = $('#filter_name').val();
@@ -144,12 +144,71 @@
                 table.draw();
             });
 
+            // Toggle active action
+            $('#users-table').on('click', '.toggle-active', function() {
+                let id = $(this).data('id');
+                let currentActive = $(this).data('active');
+                let confirmMsg = currentActive ? 'Bạn có chắc muốn khóa tài khoản này?' : 'Bạn có chắc muốn mở khóa tài khoản này?';
+                if (confirm(confirmMsg)) {
+                    $.ajax({
+                        url: '{{ route('api.user.toggle-active', '_id_') }}'.replace('_id_', id),
+                        type: 'POST',
+                        data: { _token: '{{ csrf_token() }}' },
+                        success: function(response) {
+                            if (response.success) {
+                                table.draw(false);
+                                Toastify({
+                                    text: response.message,
+                                    duration: 3000,
+                                    style: { background: "green" }
+                                }).showToast();
+                            }
+                        },
+                        error: function(xhr) {
+                            Toastify({
+                                text: 'Lỗi khi cập nhật: ' + xhr.responseJSON.message,
+                                duration: 3000,
+                                style: { background: "red" }
+                            }).showToast();
+                        }
+                    });
+                }
+            });
+
+            // Reset password action
+            $('#users-table').on('click', '.reset-password', function() {
+                let id = $(this).data('id');
+                if (confirm('Bạn có chắc muốn reset mật khẩu tài khoản này về mặc định?')) {
+                    $.ajax({
+                        url: '{{ route('api.user.reset-password', '_id_') }}'.replace('_id_', id),
+                        type: 'POST',
+                        data: { _token: '{{ csrf_token() }}' },
+                        success: function(response) {
+                            if (response.success) {
+                                Toastify({
+                                    text: response.message,
+                                    duration: 3000,
+                                    style: { background: "green" }
+                                }).showToast();
+                            }
+                        },
+                        error: function(xhr) {
+                            Toastify({
+                                text: 'Lỗi khi reset: ' + xhr.responseJSON.message,
+                                duration: 3000,
+                                style: { background: "red" }
+                            }).showToast();
+                        }
+                    });
+                }
+            });
+
             // Delete action
             $('#users-table').on('click', '.delete-user', function() {
                 let id = $(this).data('id');
                 if (confirm('Bạn có chắc muốn xóa tài khoản này?')) {
                     $.ajax({
-                        url: '{{ route('api.users.destroy', '_id_') }}'.replace('_id_', id),
+                        url: '{{ route('api.user.destroy', '_id_') }}'.replace('_id_', id),
                         type: 'DELETE',
                         data: { _token: '{{ csrf_token() }}' },
                         success: function(response) {
