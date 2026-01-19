@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\MaintenanceTypeController;
 
 Route::middleware('api')->group(function () {
     Route::get('/units/datatable', [UnitController::class, 'datatable'])->name('api.units.datatable');
@@ -13,4 +14,7 @@ Route::middleware('api')->group(function () {
     Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('api.users.destroy');
     Route::post('/users/toggle-active', [UserController::class, 'toggleActive'])->name('api.users.toggle-active');
     Route::post('/users/reset-password', [UserController::class, 'resetPassword'])->name('api.users.reset-password');
+
+    Route::get('/maintenance-types/datatable', [MaintenanceTypeController::class, 'datatable'])->name('api.maintenance-types.datatable');
+    Route::delete('/maintenance-types/{id}', [MaintenanceTypeController::class, 'destroy'])->name('api.maintenance-types.destroy');
 });

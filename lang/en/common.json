@@ -22,5 +22,9 @@
   "unit_management": "Unit Management",
   "unit_management.index": "Units List",
   "unit_management.create": "Create Unit",
-  "unit_management.edit": "Edit Unit"
+  "unit_management.edit": "Edit Unit",
+  "maintenance_type_management": "Maintenance Type Management",
+  "maintenance_type_management.index": "Maintenance Types List",
+  "maintenance_type_management.create": "Create Maintenance Type",
+  "maintenance_type_management.edit": "Edit Maintenance Type"
 }
