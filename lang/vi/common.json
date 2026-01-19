@@ -26,5 +26,9 @@
   "maintenance_type_management": "Quản lý bảo trì & nâng cấp",
   "maintenance_type_management.index": "Danh sách bảo trì & nâng cấp",
   "maintenance_type_management.create": "Thêm bảo trì & nâng cấp",
-  "maintenance_type_management.edit": "Chỉnh sửa bảo trì & nâng cấp"
+  "maintenance_type_management.edit": "Chỉnh sửa bảo trì & nâng cấp",
+  "equipment_management": "Quản lý thiết bị",
+  "equipment_management.index": "Danh sách thiết bị",
+  "equipment_management.create": "Thêm thiết bị",
+  "equipment_management.edit": "Chỉnh sửa thiết bị"
 }

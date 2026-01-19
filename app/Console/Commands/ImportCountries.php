@@ -33,7 +33,7 @@ class ImportCountries extends Command
             return 1;
         }
 
-        // Lấy dữ liệu countries từ JSON (giả sử là mảng trực tiếp)
+        // Lấy dữ liệu countries từ JSON
         $countries = $jsonData ?? [];
 
         // Số lượng bản ghi mỗi lần chèn
@@ -77,7 +77,7 @@ class ImportCountries extends Command
             foreach ($countryData as $chunk) {
                 Country::upsert(
                     $chunk->toArray(),
-                    ['code'], // Khóa duy nhất để kiểm tra (giả sử code là unique)
+                    ['code'],
                     ['name', 'created_at', 'updated_at']
                 );
                 $this->info('Inserted/Updated ' . $chunk->count() . ' countries.');
