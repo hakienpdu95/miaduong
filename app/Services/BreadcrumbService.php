@@ -130,13 +130,14 @@ class BreadcrumbService
 
     /**
      * Auto build breadcrumbs from route hierarchy and ModuleConst.
+     * Sửa để không thêm category thừa nếu không cần (tự động theo route, bỏ category nếu url = '#').
      */
     protected function autoBuildFromRoute(string $currentRoute, array &$breadcrumbs): void
     {
-        $routeParts = explode('.', $currentRoute); // e.g., ['user', 'index']
+        $routeParts = explode('.', $currentRoute); // e.g., ['unit', 'edit']
         if (count($routeParts) < 1) return;
 
-        $moduleName = array_shift($routeParts); // e.g., 'user'
+        $moduleName = array_shift($routeParts); // e.g., 'unit'
 
         // Tìm module từ ModuleConst (match kebab_name)
         $modulesWithCategories = ModuleConst::getModulesWithCategories();
@@ -144,13 +145,15 @@ class BreadcrumbService
         foreach ($modulesWithCategories as $category) {
             foreach ($category['modules'] as $module) {
                 if (($module['name'] ?? '') === $moduleName) { // An toàn, check isset
-                    // Thêm category nếu cần (link # nếu không có route category)
-                    $breadcrumbs[] = ['title' => __($category['label']), 'url' => '#'];
+                    // Chỉ thêm category nếu có route thực (không '#') - sửa để bỏ thừa "System Management"
+                    if (Route::has($category['key'] . '.index')) { // Giả sử category có route index
+                        $breadcrumbs[] = ['title' => __($category['label']), 'url' => route($category['key'] . '.index')];
+                    } // Else bỏ category, chỉ thêm module + action
 
                     // Thêm module index
                     $breadcrumbs[] = [
                         'title' => __($module['label']),
-                        'url' => route("{$moduleName}.index"), // Không prefix, match 'user.index'
+                        'url' => route("{$moduleName}.index"),
                     ];
 
                     // Xử lý sub-parts và action
@@ -164,11 +167,12 @@ class BreadcrumbService
                         $currentBase .= ".{$sub}";
                     }
 
-                    // Action cuối (nếu != index)
+                    // Action cuối (nếu != index) - tùy chỉnh title cho 'edit' thành 'Chỉnh sửa đơn vị'
                     if (!empty($routeParts) && $routeParts[0] !== 'index') {
                         $action = $routeParts[0];
+                        $actionTitle = ($action === 'edit') ? 'Chỉnh sửa đơn vị' : __(Str::title($action)); // Sửa custom cho 'edit'
                         $breadcrumbs[] = [
-                            'title' => __(Str::title($action)),
+                            'title' => $actionTitle,
                             'url' => route($currentRoute, Route::current()->parameters()),
                         ];
                     }
@@ -200,13 +204,13 @@ class BreadcrumbService
         $routeParts = explode('.', $currentRoute);
         if (count($routeParts) < 2) return;
 
-        $module = implode('.', array_slice($routeParts, 0, -1)); // e.g., 'user'
-        $action = end($routeParts); // e.g., 'index'
+        $module = implode('.', array_slice($routeParts, 0, -1)); // e.g., 'unit'
+        $action = end($routeParts); // e.g., 'edit'
 
         $parameters = Route::current()->parameters();
         $id = end($parameters) ?? null; // Giả sử param cuối là id (nếu có)
 
-        $modelName = Str::studly(Str::singular($module)); // e.g., 'User'
+        $modelName = Str::studly(Str::singular($module)); // e.g., 'Unit'
         $modelClass = "App\\Models\\{$modelName}";
 
         if (class_exists($modelClass)) {
