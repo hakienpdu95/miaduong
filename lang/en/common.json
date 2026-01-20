@@ -30,5 +30,9 @@
   "equipment_management": "Equipment Type Management",
   "equipment_management.index": "Equipment Types List",
   "equipment_management.create": "Create Equipment Type",
-  "equipment_management.edit": "Edit Equipment Type"
+  "equipment_management.edit": "Edit Equipment Type",
+  "maintenance_log_management": "Maintenance Log Management",
+  "maintenance_log_management.index": "Maintenance Types Log",
+  "maintenance_log_management.create": "Create Maintenance Log",
+  "maintenance_log_management.edit": "Edit Maintenance Log"
 }

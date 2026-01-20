@@ -67,6 +67,7 @@
                             <th>Phương pháp nhập</th>
                             <th>Ngày nhập</th>
                             <th>Đơn vị sử dụng</th>
+                            <th>Số lượng Serial</th> <!-- Cột mới -->
                             <th>Ngày tạo</th>
                             <th>Hành động</th>
                         </tr>
@@ -120,6 +121,7 @@
                         { data: 'import_method_label', name: 'import_method' },
                         { data: 'formatted_import_date', name: 'import_date' },
                         { data: 'unit_name', name: 'unit.name' },
+                        { data: 'serial_count', name: 'serial_count' }, // Cột mới
                         { data: 'formatted_created_at', name: 'created_at' },
                         { data: 'actions', name: 'actions', orderable: false, searchable: false }
                     ],
@@ -167,7 +169,6 @@
                 // Reset filters
                 $('#reset-filter').on('click', function() {
                     $('#filter-form')[0].reset();
-                    // Reset Choices selects
                     choicesElements.forEach(element => {
                         element.setChoiceByValue('');
                     });

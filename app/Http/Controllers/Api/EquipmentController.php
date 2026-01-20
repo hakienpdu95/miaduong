@@ -13,7 +13,8 @@ class EquipmentController extends Controller
     {
         $columns = ['id', 'sku', 'name', 'unit_type', 'import_method', 'import_date', 'unit_id', 'created_at'];
         $query = Equipment::select($columns)
-            ->with(['unit:id,name']); // Load relation để lấy unit.name
+            ->with(['unit:id,name'])
+            ->withCount('qrCodes'); // Tối ưu: Load count serial batch (1 query cho toàn trang)
 
         // Optional: Show soft deleted nếu param ?withTrashed=1
         if ($request->filled('withTrashed')) {
@@ -62,6 +63,9 @@ class EquipmentController extends Controller
             })
             ->addColumn('formatted_created_at', function ($equipment) {
                 return optional($equipment->created_at)->format('d/m/Y H:i') ?? '';
+            })
+            ->addColumn('serial_count', function ($equipment) {
+                return $equipment->qr_codes_count; // Sử dụng count đã load từ withCount
             })
             ->addColumn('actions', function ($equipment) {
                 return '<a href="' . route('equipment.edit', $equipment->id) . '" class="btn btn-sm btn-primary me-1"><i class="fa-light fa-pen-to-square"></i></a>' .

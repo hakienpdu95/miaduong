@@ -30,5 +30,9 @@
     "equipment_management": "Quản lý thiết bị",
     "equipment_management.index": "Danh sách thiết bị",
     "equipment_management.create": "Thêm thiết bị",
-    "equipment_management.edit": "Chỉnh sửa thiết bị"
+    "equipment_management.edit": "Chỉnh sửa thiết bị",
+    "maintenance_log_management": "Quản lý nhật ký bảo trì",
+    "maintenance_log_management.index": "Danh sách nhật ký bảo trì",
+    "maintenance_log_management.create": "Thêm nhật ký bảo trì",
+    "maintenance_log_management.edit": "Chỉnh sửa nhật ký bảo trì"
 }
