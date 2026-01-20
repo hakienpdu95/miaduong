@@ -185,4 +185,13 @@ class EquipmentController extends Controller
 
         return $serials;
     }
+
+    /**
+     * Display the list of serials for a specific equipment.
+     */
+    public function serials($id)
+    {
+        $equipment = Equipment::findOrFail($id);
+        return view('backend.equipment.serials', compact('equipment'));
+    }
 }

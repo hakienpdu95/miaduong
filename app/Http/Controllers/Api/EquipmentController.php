@@ -65,6 +65,7 @@ class EquipmentController extends Controller
             })
             ->addColumn('actions', function ($equipment) {
                 return '<a href="' . route('equipment.edit', $equipment->id) . '" class="btn btn-sm btn-primary me-1"><i class="fa-light fa-pen-to-square"></i></a>' .
+                       '<a href="' . route('admin.equipment.serials', $equipment->id) . '" class="btn btn-sm btn-info me-1"><i class="fa fa-qrcode"></i></a>' .
                        '<button class="btn btn-sm btn-danger delete-equipment" data-id="' . $equipment->id . '"><i class="fa-light fa-trash"></i></button>';
             })
             ->filterColumn('name', function ($query, $keyword) {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\MaintenanceTypeController;
 use App\Http\Controllers\Api\EquipmentController;
+use App\Http\Controllers\Api\EquipmentQrCodeController;
 
 Route::middleware('api')->group(function () {
     Route::get('/units/datatable', [UnitController::class, 'datatable'])->name('api.units.datatable');
@@ -21,4 +22,6 @@ Route::middleware('api')->group(function () {
 
     Route::get('/equipments/datatable', [EquipmentController::class, 'datatable'])->name('api.equipments.datatable');
     Route::delete('/equipments/{id}', [EquipmentController::class, 'destroy'])->name('api.equipments.destroy');
+
+    Route::get('/equipment-qr-codes/{equipmentId}/datatable', [EquipmentQrCodeController::class, 'datatable'])->name('api.equipment-qr-codes.datatable');
 });

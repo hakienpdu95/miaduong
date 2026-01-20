@@ -27,6 +27,7 @@ export default defineConfig({
                 'resources/js/modules/suneditor.js',
                 'resources/js/modules/flatpickr.js',
                 'resources/js/modules/tagify.js',
+                'resources/js/modules/qrcode-generator.js',
                 'resources/js/defaultmenu.min.js',
             ],
             refresh: true,
@@ -87,6 +88,7 @@ export default defineConfig({
                 suneditor: 'resources/js/modules/suneditor.js',
                 flatpickr: 'resources/js/modules/flatpickr.js',
                 tagify: 'resources/js/modules/tagify.js',
+                qrcode_generator: 'resources/js/modules/qrcode-generator.js',
                 bootstrap_css: 'resources/css/bootstrap.css',
                 dataTables_css: 'resources/css/dataTables.css',
                 fontawesomepro_css: 'resources/css/fontawesomepro.css',
@@ -112,6 +114,7 @@ export default defineConfig({
                         suneditor: 'assets/suneditor.[hash].js',
                         flatpickr: 'assets/flatpickr.[hash].js',
                         tagify: 'assets/tagify.[hash].js',
+                        qrcode_generator: 'assets/qrcode-generator.[hash].js',
                     };
                     return names[chunkInfo.name] || 'assets/[name].[hash].js';
                 },
@@ -139,7 +142,7 @@ export default defineConfig({
         },
     },
     optimizeDeps: {
-        include: ['jquery', '@popperjs/core', 'bootstrap/dist/js/bootstrap.bundle.min.js', 'toastify-js', 'defaultmenu.min'], // Pre-bundle chỉ các file dùng trong master
+        include: ['jquery', '@popperjs/core', 'bootstrap/dist/js/bootstrap.bundle.min.js', 'toastify-js', 'qrcode-generator', 'defaultmenu.min'], // Pre-bundle chỉ các file dùng trong master
         exclude: ['choices.js', 'suneditor', 'flatpickr'], // Loại trừ module route cụ thể
         esbuildOptions: {
             minify: true,
