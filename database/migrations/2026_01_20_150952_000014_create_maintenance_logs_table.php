@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('maintenance_logs', function (Blueprint $table) {
             $table->bigIncrements('id')->comment('Khóa chính');
-            $table->unsignedBigInteger('equipment_id')->comment('Thuộc thiết bị')->constrained('equipments')->onDelete('cascade')->index();
+            $table->unsignedBigInteger('equipment_qr_code_id')->comment('Thuộc thiết bị')->constrained('equipment_qr_codes')->onDelete('cascade')->index();
             $table->unsignedBigInteger('maintenance_type_id')->comment('Thuộc loại bảo trì')->constrained('maintenance_types')->onDelete('cascade')->index();
             $table->date('maintenance_time')->comment('Thời gian bảo trì')->index();
             $table->unsignedBigInteger('performer_id')->comment('Thuộc người dùng - quản đốc thực hiện')->constrained('users')->onDelete('cascade')->index();

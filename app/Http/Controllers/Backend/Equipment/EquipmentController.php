@@ -7,6 +7,7 @@ use App\Http\Requests\EquipmentRequest;
 use App\Models\Country;
 use App\Models\Equipment;
 use App\Models\EquipmentQrCode;
+use App\Models\SerialCounter;
 use App\Models\Unit;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -69,28 +70,32 @@ class EquipmentController extends Controller
 
             $equipment = Equipment::create($data);
 
-            if ($validated['import_method'] === 'batch_series') {
-                for ($i = 0; $i < $validated['quantity']; $i++) {
-                    $serial = $this->generateUniqueSerial();
-                    EquipmentQrCode::create([
-                        'equipment_id' => $equipment->id,
-                        'serial_number' => $serial,
-                        'managed_by' => Auth::id(),
-                        'created_by' => Auth::id(),
-                        'updated_by' => Auth::id(),
-                    ]);
-                }
-            } else {
-                // For single_item, create one QR code
-                $serial = $this->generateUniqueSerial();
-                EquipmentQrCode::create([
+            $userId = Auth::id();
+            $prefixMap = [
+                'box' => 'A',
+                'set_kit' => 'B',
+                'device_equipment' => 'C',
+                'piece_item' => 'D',
+                'unit_piece' => 'E',
+            ];
+            $prefix = $prefixMap[$validated['unit_type']] ?? 'A'; // Default 'A' nếu không match
+
+            $quantity = $validated['import_method'] === 'batch_series' ? $validated['quantity'] : 1;
+            $serials = $this->generateSerials($prefix, $quantity);
+
+            $qrData = [];
+            foreach ($serials as $serial) {
+                $qrData[] = [
                     'equipment_id' => $equipment->id,
                     'serial_number' => $serial,
-                    'managed_by' => Auth::id(),
-                    'created_by' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                ]);
+                    'managed_by' => $userId,
+                    'created_by' => $userId,
+                    'updated_by' => $userId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
             }
+            EquipmentQrCode::insert($qrData); // Bulk insert: 1 query cho toàn bộ
 
             DB::commit();
             return redirect()->route('equipment.index')->with('success', 'Thiết bị đã được tạo thành công.');
@@ -101,15 +106,30 @@ class EquipmentController extends Controller
     }
 
     /**
-     * Generate a unique 8-character serial number.
+     * Generate an array of unique sequential serial numbers with the given prefix and count.
+     * Ensures sequential increment across creations for each prefix independently.
      */
-    private function generateUniqueSerial(): string
+    private function generateSerials(string $prefix, int $count): array
     {
-        do {
-            $serial = Str::random(8);
-        } while (EquipmentQrCode::where('serial_number', $serial)->exists());
+        // Lấy hoặc tạo counter cho prefix, dùng lock để atomic (tránh race condition)
+        $counter = SerialCounter::lockForUpdate()->firstOrCreate(
+            ['prefix' => $prefix],
+            ['last_number' => 0]
+        );
 
-        return $serial;
+        $start = $counter->last_number + 1;
+        $serials = [];
+        for ($i = 0; $i < $count; $i++) {
+            $number = $start + $i;
+            // Format: Prefix + 7 digits (tổng 8 chars), đảm bảo đủ và đều (0000001, 0000002, ...)
+            $serials[] = $prefix . str_pad($number, 7, '0', STR_PAD_LEFT);
+        }
+
+        // Cập nhật last_number, đảm bảo tịnh tiến tăng dần cho lần tạo tiếp theo
+        $counter->last_number = $start + $count - 1;
+        $counter->save();
+
+        return $serials;
     }
 
     // Additional methods like edit, update, etc., can be added similarly.

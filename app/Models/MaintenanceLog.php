@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class MaintenanceLog extends Model
 {
     protected $fillable = [
-        'equipment_id',
+        'equipment_qr_code_id',
         'maintenance_type_id',
         'maintenance_time',
         'performer_id',
@@ -26,7 +26,7 @@ class MaintenanceLog extends Model
 
     public function equipment()
     {
-        return $this->belongsTo(Equipment::class, 'equipment_id');
+        return $this->belongsTo(EquipmentQrCode::class, 'equipment_qr_code_id');
     }
 
     public function maintenanceType()

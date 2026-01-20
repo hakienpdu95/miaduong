@@ -142,9 +142,17 @@
     "updated_at///timestamp///__///_NULL///NULL///__///Thời gian cập nhật"
   ],
   [
+    "serial_counters///__///__///Bảng lưu thông tin lưu last number",
+    "id///bigIncrements///__///__///__///__///Khóa chính",
+    "prefix///char///8///_NULL///NULL///->unique()->index()///Serial Number",
+    "last_number///unsignedBigInteger///__///_NULL///NULL///__///Last Number",
+    "created_at///timestamp///__///_NULL///NULL///__///Thời gian tạo",
+    "updated_at///timestamp///__///_NULL///NULL///__///Thời gian cập nhật"
+  ],
+  [
     "maintenance_logs///__///__///Bảng lưu thông tin bảo trì - nâng cấp thiết bị",
     "id///bigIncrements///__///__///__///__///Khóa chính",
-    "equipment_id///unsignedBigInteger///__///NOT_NULL///__///->constrained('equipments')->onDelete('cascade')->index()///Thuộc thiết bị",
+    "equipment_qr_code_id///unsignedBigInteger///__///NOT_NULL///__///->constrained('equipment_qr_codes')->onDelete('cascade')->index()///Thuộc thiết bị",
     "maintenance_type_id///unsignedBigInteger///__///NOT_NULL///__///->constrained('maintenance_types')->onDelete('cascade')->index()///Thuộc loại bảo trì",
     "maintenance_time///date///__///NOT_NULL///__///->index()///Thời gian bảo trì",
     "performer_id///unsignedBigInteger///__///NOT_NULL///__///->constrained('users')->onDelete('cascade')->index()///Thuộc người dùng - quản đốc thực hiện",
