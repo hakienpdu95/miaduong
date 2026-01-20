@@ -23,21 +23,25 @@ class EquipmentRequest extends FormRequest
      */
     public function rules(): array
     {
+        $id = $this->route('id'); // Lấy id từ route cho unique ignore
         $rules = [
-            'sku' => ['required', 'string', 'max:100', Rule::unique('equipments', 'sku')],
-            'unit_type' => ['required', Rule::in(['box', 'set_kit', 'device_equipment', 'piece_item', 'unit_piece'])],
-            'import_method' => ['required', Rule::in(['single_item', 'batch_series'])],
+            'sku' => ['required', 'string', 'max:100', Rule::unique('equipments', 'sku')->ignore($id)],
             'name' => ['required', 'string', 'max:255'],
             'image' => ['nullable', 'file', 'image', 'max:2048'], // Assuming 2MB max
             'import_date' => ['nullable', 'date'],
-            'country_id' => ['nullable', 'exists:countries,id'],
+            'country_id' => ['nullable', 'exists:country,id'],
             'unit_id' => ['required', 'exists:units,id'],
             'attachment' => ['nullable', 'string'],
             'additional_info' => ['nullable', 'string'],
         ];
 
-        if ($this->input('import_method') === 'batch_series') {
-            $rules['quantity'] = ['required', 'integer', 'min:1'];
+        if ($this->method() === 'POST') {
+            // Rules chỉ cho create
+            $rules['unit_type'] = ['required', Rule::in(['box', 'set_kit', 'device_equipment', 'piece_item', 'unit_piece'])];
+            $rules['import_method'] = ['required', Rule::in(['single_item', 'batch_series'])];
+            if ($this->input('import_method') === 'batch_series') {
+                $rules['quantity'] = ['required', 'integer', 'min:1'];
+            }
         }
 
         return $rules;

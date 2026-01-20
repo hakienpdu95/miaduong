@@ -71,6 +71,9 @@ class EquipmentController extends Controller
             $equipment = Equipment::create($data);
 
             $userId = Auth::id();
+            // Linh hoạt prefix dựa trên bảng chữ cái (ví dụ: map theo unit_type)
+            // Bạn có thể customize map này theo nhu cầu (A cho box, B cho set_kit, v.v.)
+            // Hoặc dựa trên import_date, unit_id, hoặc config từ DB
             $prefixMap = [
                 'box' => 'A',
                 'set_kit' => 'B',
@@ -106,6 +109,57 @@ class EquipmentController extends Controller
     }
 
     /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit($id)
+    {
+        $equipment = Equipment::findOrFail($id);
+        $countries = Country::all();
+        $units = Unit::all();
+        return view('backend.equipment.edit', compact('equipment', 'countries', 'units'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(EquipmentRequest $request, $id)
+    {
+        $equipment = Equipment::findOrFail($id);
+        $validated = $request->validated();
+        DB::beginTransaction();
+        try {
+            $data = [
+                'sku' => $validated['sku'],
+                'name' => $validated['name'],
+                'import_date' => $validated['import_date'] ?? now()->format('Y-m-d'),
+                'country_id' => $validated['country_id'] ?? null,
+                'unit_id' => $validated['unit_id'],
+                'attachment' => $validated['attachment'] ?? null,
+                'additional_info' => $validated['additional_info'] ?? null,
+                // KHÔNG update unit_type và import_method
+                // Nếu import_method là batch_series, KHÔNG update quantity và KHÔNG tạo lại serial
+            ];
+
+            if ($request->hasFile('image')) {
+                // Xóa image cũ nếu có
+                if ($equipment->image_path) {
+                    Storage::delete(str_replace('/storage/', 'public/', $equipment->image_path));
+                }
+                $path = $request->file('image')->store('equipments/images', 'public');
+                $data['image_path'] = Storage::url($path);
+            }
+
+            $equipment->update($data);
+
+            DB::commit();
+            return redirect()->route('equipment.index')->with('success', 'Thiết bị đã được cập nhật thành công.');
+        } catch (Exception $e) {
+            DB::rollback();
+            return redirect()->back()->withInput()->with('error', 'Lỗi khi cập nhật thiết bị: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Generate an array of unique sequential serial numbers with the given prefix and count.
      * Ensures sequential increment across creations for each prefix independently.
      */
@@ -131,6 +185,4 @@ class EquipmentController extends Controller
 
         return $serials;
     }
-
-    // Additional methods like edit, update, etc., can be added similarly.
 }
