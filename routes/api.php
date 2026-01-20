@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\MaintenanceTypeController;
+use App\Http\Controllers\Api\EquipmentController;
 
 Route::middleware('api')->group(function () {
     Route::get('/units/datatable', [UnitController::class, 'datatable'])->name('api.units.datatable');
@@ -17,4 +18,7 @@ Route::middleware('api')->group(function () {
 
     Route::get('/maintenance-types/datatable', [MaintenanceTypeController::class, 'datatable'])->name('api.maintenance-types.datatable');
     Route::delete('/maintenance-types/{id}', [MaintenanceTypeController::class, 'destroy'])->name('api.maintenance-types.destroy');
+
+    Route::get('/equipments/datatable', [EquipmentController::class, 'datatable'])->name('api.equipments.datatable');
+    Route::delete('/equipments/{id}', [EquipmentController::class, 'destroy'])->name('api.equipments.destroy');
 });

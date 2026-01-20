@@ -113,23 +113,12 @@
     "updated_at///timestamp///__///_NULL///NULL///__///Thời gian cập nhật"
   ],
   [
-    "import_batches///__///__///Bảng lưu thông tin batch nhập thiết bị - track phương pháp và số lượng",
+    "equipments///__///__///Bảng lưu thông tin thiết bị",
     "id///bigIncrements///__///__///__///__///Khóa chính",
     "sku///string///100///_NULL///NULL///->unique()->index()///Mã SKU",
     "unit_type///enum///[box,set_kit,device_equipment,piece_item,unit_piece]///NOT_NULL///'box'///->index()///Đơn vị tính", 
     "import_method///enum///[single_item,batch_series]///NOT_NULL///'single_item'///->index()///Phương pháp nhập", 
-    "importer_id///unsignedBigInteger///__///NOT_NULL///__///->constrained('users')->onDelete('cascade')->index()///Thuộc người dùng",
     "quantity///unsignedBigInteger///__///_NULL///NULL///__///Số lượng",
-    "import_date///date///__///_NULL///NULL///->index()///Ngày nhập",
-    "notes///text///__///_NULL///NULL///__///Mô tả",
-    "created_at///timestamp///__///_NULL///NULL///__///Thời gian tạo",
-    "updated_at///timestamp///__///_NULL///NULL///__///Thời gian cập nhật"
-  ],
-  [
-    "equipments///__///__///Bảng lưu thông tin thiết bị",
-    "id///bigIncrements///__///__///__///__///Khóa chính",
-    "import_batch_id///unsignedBigInteger///__///NOT_NULL///__///->constrained('import_batches')->onDelete('cascade')->index()///Thuộc batch nhập thiết bị",
-    "serial///char///10///_NULL///NULL///->unique()->index()///Mã serial thiết bị",
     "name///string///255///NOT_NULL///__///->index()///Tên thiết bị",
     "image_path///string///700///_NULL///NULL///__///Full image path",
     "import_date///date///__///_NULL///NULL///->index()///Ngày nhập thiết bị",
@@ -137,6 +126,18 @@
     "unit_id///unsignedBigInteger///__///NOT_NULL///__///->constrained('units')->onDelete('cascade')->index()///Thuộc đơn vị sử dụng",
     "attachment///longText///__///_NULL///NULL///__///File đính kèm dạng soạn thảo",
     "additional_info///longText///__///_NULL///NULL///__///Thông tin bổ sung",
+    "managed_by///unsignedBigInteger///__///_NULL///NULL///->constrained('users')->onDelete('set null')///Người quản lý",
+    "created_at///timestamp///__///_NULL///NULL///__///Thời gian tạo",
+    "updated_at///timestamp///__///_NULL///NULL///__///Thời gian cập nhật"
+  ],
+  [
+    "equipment_qr_codes///__///__///Bảng lưu thông tin QR Code thiết bị",
+    "id///bigIncrements///__///__///__///__///Khóa chính",
+    "equipment_id///unsignedBigInteger///__///NOT_NULL///__///->constrained('equipments')->onDelete('cascade')->index()///Thuộc thiết bị",
+    "serial_number///char///8///_NULL///NULL///->unique()->index()///Serial Number",
+    "managed_by///unsignedBigInteger///__///_NULL///NULL///->constrained('users')->onDelete('set null')///Người quản lý",
+    "created_by///unsignedBigInteger///__///_NULL///NULL///->constrained('users')->onDelete('set null')///Tạo bởi",
+    "updated_by///unsignedBigInteger///__///_NULL///NULL///->constrained('users')->onDelete('set null')///Cập nhật bởi",
     "created_at///timestamp///__///_NULL///NULL///__///Thời gian tạo",
     "updated_at///timestamp///__///_NULL///NULL///__///Thời gian cập nhật"
   ],

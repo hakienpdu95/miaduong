@@ -3,62 +3,49 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use App\Models\ImportBatch;
 use Illuminate\Validation\Rule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Log;
 
 class EquipmentRequest extends FormRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     */
     public function authorize(): bool
     {
         return true;
     }
 
+    /**
+     * Get the validation rules that apply to the request.
+     */
     public function rules(): array
     {
         $rules = [
-            'sku' => ['required', 'string', 'max:255', 'unique:import_batches,sku'],
-            'unit_type' => ['required', 'string', Rule::in(['box', 'set_kit', 'device_equipment', 'piece_item', 'unit_piece'])],
-            'import_method' => ['required', 'string', Rule::in(['single_item', 'batch_series'])],
+            'sku' => ['required', 'string', 'max:100', Rule::unique('equipments', 'sku')],
+            'unit_type' => ['required', Rule::in(['box', 'set_kit', 'device_equipment', 'piece_item', 'unit_piece'])],
+            'import_method' => ['required', Rule::in(['single_item', 'batch_series'])],
+            'name' => ['required', 'string', 'max:255'],
+            'image' => ['nullable', 'file', 'image', 'max:2048'], // Assuming 2MB max
+            'import_date' => ['nullable', 'date'],
+            'country_id' => ['nullable', 'exists:countries,id'],
+            'unit_id' => ['required', 'exists:units,id'],
+            'attachment' => ['nullable', 'string'],
+            'additional_info' => ['nullable', 'string'],
         ];
 
-        if ($this->import_method === 'single_item') {
-            $rules += [
-                'name' => ['required', 'string', 'max:255'],
-                'image' => ['nullable', 'file', 'image', 'max:2048'],
-                'import_date' => ['nullable', 'date'],
-                'country_id' => ['nullable', 'integer', 'exists:country,id'],
-                'unit_id' => ['required', 'integer', 'exists:units,id'],
-                'attachment' => ['nullable', 'string'],
-                'additional_info' => ['nullable', 'string'],
-            ];
-        } else {
-            $rules += [
-                'quantity' => ['required', 'integer', 'min:1'],
-                'equipments' => ['required', 'array', 'size:' . $this->quantity],
-                'equipments.*.name' => ['required', 'string', 'max:255'],
-                'equipments.*.image' => ['nullable', 'file', 'image', 'max:2048'],
-                'equipments.*.import_date' => ['nullable', 'date'],
-                'equipments.*.country_id' => ['nullable', 'integer', 'exists:country,id'],
-                'equipments.*.unit_id' => ['required', 'integer', 'exists:units,id'],
-                'equipments.*.attachment' => ['nullable', 'string'],
-                'equipments.*.additional_info' => ['nullable', 'string'],
-            ];
+        if ($this->input('import_method') === 'batch_series') {
+            $rules['quantity'] = ['required', 'integer', 'min:1'];
         }
 
         return $rules;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if (empty($this->sku)) {
-            $maxId = ImportBatch::max('id') ?? 0;
-            $generatedSku = 'SKU-' . str_pad($maxId + 1, 5, '0', STR_PAD_LEFT);
-            $this->merge(['sku' => $generatedSku]);
-        }
-    }
-
+    /**
+     * Custom messages for validation errors.
+     */
     public function messages(): array
     {
         return [
@@ -68,14 +55,16 @@ class EquipmentRequest extends FormRequest
             'import_method.required' => 'Phương pháp nhập là bắt buộc.',
             'name.required' => 'Tên thiết bị là bắt buộc.',
             'unit_id.required' => 'Đơn vị sử dụng là bắt buộc.',
-            'equipments.*.name.required' => 'Tên thiết bị là bắt buộc.',
-            'equipments.*.unit_id.required' => 'Đơn vị sử dụng là bắt buộc.',
+            'quantity.required' => 'Số lượng là bắt buộc khi chọn Hàng Loạt.',
         ];
     }
 
+    /**
+     * Handle failed validation.
+     */
     protected function failedValidation(Validator $validator): void
     {
-        dd($validator->errors());
+        Log::error('Validation failed: ' . json_encode($validator->errors()));
         session()->flash('error', 'Vui lòng kiểm tra lỗi nhập liệu.');
         throw new HttpResponseException(
             redirect()->back()->withInput()->withErrors($validator)

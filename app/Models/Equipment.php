@@ -2,15 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Equipment extends Model
 {
+    use HasFactory;
+
     protected $table = 'equipments';
 
     protected $fillable = [
-        'import_batch_id',
-        'serial',
+        'sku',
+        'unit_type',
+        'import_method',
+        'quantity',
         'name',
         'image_path',
         'import_date',
@@ -18,31 +23,26 @@ class Equipment extends Model
         'unit_id',
         'attachment',
         'additional_info',
+        'managed_by',
     ];
-
-    protected $casts = [
-        'import_date' => 'date',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-    ];
-
-    public function importBatch()
-    {
-        return $this->belongsTo(ImportBatch::class, 'import_batch_id');
-    }
 
     public function country()
     {
-        return $this->belongsTo(Country::class, 'country_id');
+        return $this->belongsTo(Country::class);
     }
 
     public function unit()
     {
-        return $this->belongsTo(Unit::class, 'unit_id');
+        return $this->belongsTo(Unit::class);
     }
 
-    public function maintenanceLogs()
+    public function qrCodes()
     {
-        return $this->hasMany(MaintenanceLog::class, 'equipment_id');
+        return $this->hasMany(EquipmentQrCode::class);
+    }
+
+    public function manager()
+    {
+        return $this->belongsTo(User::class, 'managed_by');
     }
 }
