@@ -26,6 +26,12 @@ class Equipment extends Model
         'managed_by',
     ];
 
+    protected $casts = [
+        'import_date' => 'date',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
     public function country()
     {
         return $this->belongsTo(Country::class);

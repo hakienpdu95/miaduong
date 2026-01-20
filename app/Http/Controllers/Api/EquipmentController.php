@@ -11,12 +11,9 @@ class EquipmentController extends Controller
 {
     public function datatable(Request $request)
     {
-        $columns = ['equipments.id', 'equipments.import_batch_id', 'equipments.name', 'equipments.import_date', 'equipments.country_id', 'equipments.unit_id', 'equipments.created_at'];
+        $columns = ['id', 'sku', 'name', 'unit_type', 'import_method', 'import_date', 'unit_id', 'created_at'];
         $query = Equipment::select($columns)
-            ->leftJoin('import_batches', 'equipments.import_batch_id', '=', 'import_batches.id')
-            ->leftJoin('country', 'equipments.country_id', '=', 'country.id')
-            ->leftJoin('units', 'equipments.unit_id', '=', 'units.id')
-            ->with(['importBatch', 'country', 'unit']);
+            ->with(['unit:id,name']); // Load relation để lấy unit.name
 
         // Optional: Show soft deleted nếu param ?withTrashed=1
         if ($request->filled('withTrashed')) {
@@ -24,31 +21,60 @@ class EquipmentController extends Controller
         }
 
         if ($request->filled('filter_sku')) {
-            $query->where('import_batches.sku', 'like', '%' . $request->filter_sku . '%');
+            $query->where('sku', 'like', '%' . $request->filter_sku . '%');
         }
 
         if ($request->filled('filter_name')) {
-            $query->where('equipments.name', 'like', '%' . $request->filter_name . '%');
+            $query->where('name', 'like', '%' . $request->filter_name . '%');
         }
 
-        if ($request->filled('filter_unit_id')) {
-            $query->where('equipments.unit_id', $request->filter_unit_id);
+        if ($request->filled('filter_unit_type')) {
+            $query->where('unit_type', $request->filter_unit_type);
+        }
+
+        if ($request->filled('filter_import_method')) {
+            $query->where('import_method', $request->filter_import_method);
         }
 
         return DataTables::eloquent($query)
+            ->addColumn('unit_type_label', function ($equipment) {
+                $labels = [
+                    'box' => 'Hộp',
+                    'set_kit' => 'Bộ',
+                    'device_equipment' => 'Thiết bị',
+                    'piece_item' => 'Cái',
+                    'unit_piece' => 'Chiếc',
+                ];
+                return $labels[$equipment->unit_type] ?? $equipment->unit_type;
+            })
+            ->addColumn('import_method_label', function ($equipment) {
+                $labels = [
+                    'single_item' => 'Đơn chiếc',
+                    'batch_series' => 'Hàng Loạt',
+                ];
+                return $labels[$equipment->import_method] ?? $equipment->import_method;
+            })
             ->addColumn('formatted_import_date', function ($equipment) {
-                return $equipment->import_date ? $equipment->import_date->format('d/m/Y') : '';
+                return optional($equipment->import_date)->format('d/m/Y') ?? '';
+            })
+            ->addColumn('unit_name', function ($equipment) {
+                return $equipment->unit ? $equipment->unit->name : '';
+            })
+            ->addColumn('formatted_created_at', function ($equipment) {
+                return optional($equipment->created_at)->format('d/m/Y H:i') ?? '';
             })
             ->addColumn('actions', function ($equipment) {
                 return '<a href="' . route('equipment.edit', $equipment->id) . '" class="btn btn-sm btn-primary me-1"><i class="fa-light fa-pen-to-square"></i></a>' .
                        '<button class="btn btn-sm btn-danger delete-equipment" data-id="' . $equipment->id . '"><i class="fa-light fa-trash"></i></button>';
             })
             ->filterColumn('name', function ($query, $keyword) {
-                $query->where('equipments.name', 'like', "%{$keyword}%");
+                $query->where('name', 'like', "%{$keyword}%");
             })
-            ->orderColumn('import_batch.sku', 'import_batches.sku $1')
-            ->orderColumn('country.name', 'country.name $1')
-            ->orderColumn('unit.name', 'units.name $1')
+            ->filterColumn('unit.name', function ($query, $keyword) {
+                $query->whereHas('unit', function ($q) use ($keyword) {
+                    $q->where('name', 'like', "%{$keyword}%");
+                });
+            })
             ->rawColumns(['actions'])
             ->make(true);
     }
@@ -56,8 +82,17 @@ class EquipmentController extends Controller
     public function destroy($id)
     {
         $equipment = Equipment::findOrFail($id);
-        // Kiểm tra quyền nếu cần: if (!auth()->user()->can('delete-equipment')) { ... }
+        if (!auth()->user()->can('delete-equipment')) {
+            return response()->json(['success' => false, 'message' => 'Không có quyền xóa.'], 403);
+        }
         $equipment->delete();
         return response()->json(['success' => true, 'message' => 'Thiết bị đã được xóa thành công.']);
     }
+
+    // Optional: Bulk delete nếu cần mở rộng (gọi via POST /api/equipments/bulk-delete with ids array)
+    // public function bulkDestroy(Request $request) {
+    //     $request->validate(['ids' => 'required|array']);
+    //     Equipment::whereIn('id', $request->ids)->delete();
+    //     return response()->json(['success' => true, 'message' => 'Đã xóa các thiết bị thành công.']);
+    // }
 }
