@@ -3,49 +3,67 @@
 namespace App\Http\Controllers\Backend\Equipment;
 
 use App\Http\Controllers\Controller;
-use App\Models\Equipment; 
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\EquipmentRequest;
+use App\Models\Country;
+use App\Models\ImportBatch;
+use App\Models\Equipment;
+use App\Models\Unit;
+use Exception;
 
 class EquipmentController extends Controller
 {
-    public function index()
-    {
-        $roles = Equipment::paginate(10);
-        return view('backend.role.index', compact('roles'));
-    }
-
     public function create()
     {
-        return view('backend.role.create');
+        $countries = Country::all();
+        $units = Unit::all();
+        return view('backend.equipment.create', compact('countries', 'units'));
     }
 
-    public function store(Request $request)
+    public function store(EquipmentRequest $request)
     {
-        // Validation và store logic
-        Equipment::create($request->validated());
-        return redirect()->route('role.index');
-    }
+        $validated = $request->validated();
+        DB::beginTransaction();
+        try {
+            $batchData = [
+                'sku' => $validated['sku'],
+                'unit_type' => $validated['unit_type'],
+                'import_method' => $validated['import_method'],
+                'importer_id' => Auth::id(),
+                'quantity' => $validated['import_method'] === 'single_item' ? 1 : $validated['quantity'],
+            ];
+            $batch = ImportBatch::create($batchData);
 
-    public function show(Equipment $role)
-    {
-        return view('backend.role.show', compact('role'));
-    }
+            $equipmentsData = $validated['import_method'] === 'single_item' ? [$validated] : $validated['equipments'];
 
-    public function edit(Equipment $role)
-    {
-        return view('backend.role.edit', compact('role'));
-    }
+            foreach ($equipmentsData as $key => $data) {
+                $equipmentData = [
+                    'import_batch_id' => $batch->id,
+                    'name' => $data['name'],
+                    'import_date' => $data['import_date'],
+                    'country_id' => $data['country_id'] ?? null,
+                    'unit_id' => $data['unit_id'],
+                    'attachment' => $data['attachment'] ?? null,
+                    'additional_info' => $data['additional_info'] ?? null,
+                ];
 
-    public function update(Request $request, Equipment $role)
-    {
-        // Validation và update logic
-        $role->update($request->validated());
-        return redirect()->route('role.index');
-    }
+                $imageField = $validated['import_method'] === 'single_item' ? 'image' : "equipments.$key.image";
+                if ($request->hasFile($imageField)) {
+                    $file = $request->file($imageField);
+                    $path = $file->store('equipments', 'public');
+                    $equipmentData['image_path'] = $path;
+                }
 
-    public function destroy(Equipment $role)
-    {
-        $role->delete();
-        return redirect()->route('role.index');
+                Equipment::create($equipmentData);
+            }
+
+            DB::commit();
+            return redirect()->route('equipment.index')->with('success', 'Thiết bị đã được nhập thành công.');
+        } catch (Exception $e) {
+            DB::rollback();
+            return redirect()->back()->withInput()->with('error', 'Lỗi khi nhập thiết bị: ' . $e->getMessage());
+        }
     }
 }
