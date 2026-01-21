@@ -21,12 +21,12 @@ return [
                 'can_create' => true,
                 'can_edit' => true,
             ],
-            // 'enterprise_management' => [
-            //     'can_view' => true,
-            //     'can_create' => true,
-            //     'can_edit' => true,
-            //     'can_delete' => false,
-            // ],
+            'equipment_management' => [
+                'can_view' => true,
+                'can_create' => true,
+                'can_edit' => true,
+                'can_delete' => true,
+            ],
         ],
         // 'commune' => [
         //     'enterprise_management' => [

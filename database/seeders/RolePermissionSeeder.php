@@ -27,7 +27,7 @@ class RolePermissionSeeder extends Seeder
                 }
 
                 // Chỉ tạo mới nếu chưa có bản ghi trong role_permissions
-                RolePermission::firstOrCreate(
+                RolePermission::updateOrCreate(
                     [
                         'role_id' => $role->id,
                         'module_name' => $moduleName,

@@ -43,6 +43,7 @@ class ModuleServiceProvider extends ServiceProvider
                     // Namespace cho controller
                     $namespace = "App\\Http\\Controllers\\Backend\\{$modulePascal}";
                     $controller = "{$namespace}\\{$modulePascal}Controller";
+
                     if (!class_exists($controller)) {
                         continue; // Bỏ qua nếu không có controller (ngăn lỗi cho module chưa hoàn thiện)
                     }
@@ -53,13 +54,13 @@ class ModuleServiceProvider extends ServiceProvider
                         ->group(function () use ($controller, $fullModuleName) {
                             Route::resource('/', $controller)->parameters(['' => 'id']) // Force parameter là {id} thay vì {}
                                 ->middleware([
-                                    'index' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_VIEW,
-                                    'create' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_CREATE,
-                                    'store' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_CREATE,
-                                    'show' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_VIEW,
-                                    'edit' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_EDIT,
-                                    'update' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_EDIT,
-                                    'destroy' => "check.permission:{$fullModuleName}," . ModuleConst::ACTION_DELETE,
+                                    'index' => "check.permission:{$fullModuleName}",
+                                    'create' => "check.permission:{$fullModuleName}",
+                                    'store' => "check.permission:{$fullModuleName}",
+                                    'show' => "check.permission:{$fullModuleName}",
+                                    'edit' => "check.permission:{$fullModuleName}",
+                                    'update' => "check.permission:{$fullModuleName}",
+                                    'destroy' => "check.permission:{$fullModuleName}",
                                 ]);
                         });
 
@@ -91,6 +92,7 @@ class ModuleServiceProvider extends ServiceProvider
                     // Namespace cho API controller (giả sử App\Http\Controllers\Api\{ModulePascal}Controller)
                     $apiNamespace = "App\\Http\\Controllers\\Api";
                     $apiController = "{$apiNamespace}\\{$modulePascal}Controller";
+
                     if (!class_exists($apiController)) {
                         continue; // Bỏ qua nếu không có API controller
                     }
@@ -100,16 +102,13 @@ class ModuleServiceProvider extends ServiceProvider
                         ->name("api.{$moduleKebab}.")
                         ->group(function () use ($apiController, $fullModuleName) {
                             Route::get('/datatable', [$apiController, 'datatable'])->name('datatable')
-                                ->middleware("check.permission:{$fullModuleName}," . ModuleConst::ACTION_VIEW);
-
+                                ->middleware("check.permission:{$fullModuleName}");
                             Route::post('/{id}/toggle-active', [$apiController, 'toggleActive'])->name('toggle-active')
-                                ->middleware("check.permission:{$fullModuleName}," . ModuleConst::ACTION_EDIT);
-
+                                ->middleware("check.permission:{$fullModuleName}");
                             Route::post('/{id}/reset-password', [$apiController, 'resetPassword'])->name('reset-password')
-                                ->middleware("check.permission:{$fullModuleName}," . ModuleConst::ACTION_EDIT);
-
+                                ->middleware("check.permission:{$fullModuleName}");
                             Route::delete('/{id}', [$apiController, 'destroy'])->name('destroy')
-                                ->middleware("check.permission:{$fullModuleName}," . ModuleConst::ACTION_DELETE);
+                                ->middleware("check.permission:{$fullModuleName}");
                         });
 
                     // Hỗ trợ routes API tùy chỉnh per module (tùy chọn, ví dụ api_routes.php trong dir)
