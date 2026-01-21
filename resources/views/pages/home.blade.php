@@ -2,5 +2,5 @@
 
 
 @section('content')
-    <h1>KIENDH</h1>
+    
 @endsection
