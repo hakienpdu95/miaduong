@@ -6,8 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="locale" content="{{ config('app.locale') }}">
     <script>window.APP_LOCALE = '{{ config('app.locale') }}';</script>
-    <title>Admin Panel</title>
-    <link rel="shortcut icon" href="https://static-cms-sggp.epicdn.me/v4/web/styles/img/favicon.ico" type="image/x-icon">
+    <title>Quản lý thiết bị</title>
+    <link rel="shortcut icon" href="{{ asset('assets/web/styles/img/favicon.jpg') }}" type="image/x-icon">
     
     <!-- Preload fonts CSS sớm -->
     <link rel="preload" as="style" href="{{ Vite::asset('resources/css/fonts.css', 'build/backend') }}">

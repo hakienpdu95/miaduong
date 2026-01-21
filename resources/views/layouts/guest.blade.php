@@ -4,7 +4,7 @@
     <title>@yield('title', config('app.name', 'Cổng thông tin'))</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="https://static-cms-sggp.epicdn.me/v4/web/styles/img/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ asset('assets/web/styles/img/favicon.jpg') }}" type="image/x-icon">
 
     <!-- Preload fonts CSS sớm -->
     <link rel="preload" as="style" href="{{ Vite::asset('resources/css/fonts.css', 'build/frontend') }}">
