@@ -7,6 +7,24 @@ use App\Constants\ModuleConst;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB; // Thêm để query nếu cần
 
+/**
+ * Service for generating breadcrumbs dynamically in backend/frontend.
+ * Tích hợp với ModuleConst cho auto build, hiệu suất cao với static cache nội bộ.
+ * Nâng cao: Hỗ trợ sub-pages/module con (e.g., serials dưới equipment, maintenance-log dưới serial)
+ * - Dynamic fetch tên từ model (e.g., tên equipment/serial từ DB via id param)
+ * - Linh hoạt: Không fixed cứng route/module, detect từ route name/parts/parameters
+ *   - Detect model động từ route parts (e.g., 'equipment' -> App\Models\Equipment, 'serials' -> App\Models\EquipmentQrCode)
+ *   - Xử lý nested params động: Loop qua params theo thứ tự route parts (e.g., param1 cho model1, param2 cho model2)
+ *   - Cache model per request để tối ưu (không query lặp)
+ *   - Mở rộng dễ: Khi thêm module mới (e.g., MaintenanceLog), chỉ cần route convention (e.g., 'equipment.serials.maintenance-log.{maintenance_log_id}')
+ *     - Service sẽ auto detect model từ 'maintenance-log' -> App\Models\MaintenanceLog, fetch tên từ $item->name hoặc fallback
+ * - Tối ưu: Chỉ query cần thiết, cache static configs, per-request cache generated & models
+ * - Chỉnh sửa: Insert tên item (từ model) vào sau module index, trước sub-action (e.g., Quản lý thiết bị > [Tên] > Danh sách mã Serial)
+ * - Fix duplicate: Skip thêm action title nếu nó trùng với sub-part cuối hoặc nếu đã insert item (check logic để tránh 'Serials > Serials')
+ * - Fix label: Ưu tiên title từ config (e.g., 'edit' => 'Edit Maintenance Log')
+ * - Fix error route: Strip 'admin.' prefix khi match config, add 'admin.' khi generate URL; wrap Route::has() fallback '#'
+ * - Fix order: Insert item name trước action (e.g., ... > Màn hình LCD Dell > Edit), và ưu tiên config label cho action (e.g., 'Edit Maintenance Type')
+ */
 class BreadcrumbService
 {
     protected static array $configs = []; // Static cache configs (load 1 lần per app)
@@ -77,7 +95,7 @@ class BreadcrumbService
 
         $breadcrumbs = [];
 
-        // Build từ config (ưu tiên)
+        // Build từ config (ưu tiên, và sẽ handle action label custom)
         if ($this->buildFromConfig(static::$configs[$section] ?? [], $currentRoute, $breadcrumbs)) {
             // OK
         } else {
@@ -85,7 +103,7 @@ class BreadcrumbService
             $this->autoBuildFromRoute($currentRoute, $breadcrumbs);
         }
 
-        // Dynamic cho show/edit/delete/index/sub-pages (lấy title từ model nếu có) - Insert vào vị trí đúng
+        // Dynamic cho show/edit/delete/index/sub-pages (lấy title từ model nếu có) - Insert vào vị trí đúng, trước action
         $this->buildDynamic($currentRoute, $breadcrumbs);
 
         // Thêm dashboard/home mặc định ở đầu nếu là backend/frontend (sửa dùng 'admin.dashboard')
@@ -111,15 +129,27 @@ class BreadcrumbService
 
     /**
      * Build breadcrumbs recursively from config.
-     * Chỉnh: Hỗ trợ sub-keys như 'edit' trực tiếp trong module config (e.g., $config['edit']['title'])
+     * Chỉnh: Hỗ trợ sub-keys như 'edit' trực tiếp trong module config (e.g., $config['edit']['title'] or string)
      * - Strip prefix 'admin.' khi match currentRoute để linh hoạt
+     * - Nếu match action sub-key, dùng title custom (fix generic 'Edit')
      */
-    protected function buildFromConfig(array $config, string $currentRoute, array &$breadcrumbs, string $parentUrl = ''): bool
+    protected function buildFromConfig(array $config, string $currentRoute, array &$breadcrumbs, string $parentKey = ''): bool
     {
         $strippedRoute = str_replace($this->routePrefix, '', $currentRoute); // Strip 'admin.' để match config không prefix
+        $parts = explode('.', $strippedRoute); // e.g., ['equipment', 'edit']
+        $action = end($parts); // e.g., 'edit'
 
         foreach ($config as $key => $item) {
-            if (is_array($item) && isset($item['url'])) { // Child item
+            if ($key === $action && (is_string($item) || (is_array($item) && isset($item['title'])))) { // Match action sub-key (string or array)
+                $title = is_string($item) ? $item : $item['title'];
+                $breadcrumbs[] = [
+                    'title' => __($title),
+                    'url' => $this->safeRoute($currentRoute, Route::current()->parameters()), // Full route for URL
+                ];
+                return true;
+            }
+
+            if (is_array($item) && isset($item['url'])) { // Child item with url
                 $itemUrl = $item['url'] ?? null;
                 if ($itemUrl === $strippedRoute) {
                     $fullUrl = $this->routePrefix . $itemUrl; // Add prefix khi generate
@@ -129,7 +159,7 @@ class BreadcrumbService
                     ];
                     return true;
                 }
-                if (isset($item['children']) && $this->buildFromConfig($item['children'], $currentRoute, $breadcrumbs, $itemUrl)) {
+                if (isset($item['children']) && $this->buildFromConfig($item['children'], $currentRoute, $breadcrumbs, $key)) {
                     if ($itemUrl) {
                         $fullParent = $this->routePrefix . $itemUrl;
                         array_unshift($breadcrumbs, [
@@ -139,16 +169,8 @@ class BreadcrumbService
                     }
                     return true;
                 }
-            } elseif (is_array($item) && !isset($item['url'])) { // Sub-key như 'edit' => ['title' => 'Edit Maintenance Log']
-                if ($key === $strippedRoute) { // Match key == stripped route (e.g., 'edit')
-                    $breadcrumbs[] = [
-                        'title' => __($item['title'] ?? Str::title($key)),
-                        'url' => $this->safeRoute($currentRoute, Route::current()->parameters()), // Use full currentRoute
-                    ];
-                    return true;
-                }
-                // Recurse nếu có nested (e.g., 'edit' có children, though rare)
-                if ($this->buildFromConfig($item, $currentRoute, $breadcrumbs, $parentUrl . '.' . $key)) {
+            } elseif (is_array($item)) { // Nested sub-config (recurse)
+                if ($this->buildFromConfig($item, $currentRoute, $breadcrumbs, $parentKey . ($parentKey ? '.' : '') . $key)) {
                     return true;
                 }
             }
@@ -162,79 +184,78 @@ class BreadcrumbService
      * Linh hoạt: Custom title cho sub-parts động (e.g., 'serials' -> 'Danh sách mã Serial', 'maintenance-log' -> 'Nhật ký bảo dưỡng')
      * - Fix duplicate: Chỉ thêm sub nếu không trùng last, và no separate action block
      */
-    protected function autoBuildFromRoute(string $currentRoute, array &$breadcrumbs): void
-    {
-        $routeParts = explode('.', $currentRoute); // e.g., ['admin', 'equipment', 'serials']
-        if (count($routeParts) < 1) return;
-
-        // Bỏ prefix 'admin.' nếu có (match name full)
-        if ($routeParts[0] === 'admin') array_shift($routeParts);
-
-        $moduleName = array_shift($routeParts); // e.g., 'equipment'
-
-        // Tìm module từ ModuleConst (match kebab_name) - Linh hoạt, loop động
-        $modulesWithCategories = ModuleConst::getModulesWithCategories();
-        $found = false;
-        foreach ($modulesWithCategories as $category) {
-            foreach ($category['modules'] as $module) {
-                if (($module['name'] ?? '') === $moduleName) { // An toàn, check isset
-                    // Chỉ thêm category nếu có route thực (không '#') - sửa để bỏ thừa "System Management"
-                    if (Route::has($category['key'] . '.index')) { // Giả sử category có route index
-                        $breadcrumbs[] = ['title' => __($category['label']), 'url' => $this->safeRoute($category['key'] . '.index')];
-                    }
-                    // Else bỏ category, chỉ thêm module + action
-
-                    // Thêm module index với title custom (e.g., 'Quản lý thiết bị')
-                    $breadcrumbs[] = [
-                        'title' => __($module['label'] ?? 'Quản lý ' . Str::title($moduleName)),
-                        'url' => $this->safeRoute("{$moduleName}.index"),
-                    ];
-
-                    // Xử lý sub-parts và action (e.g., 'serials' -> 'Danh sách mã Serial') - Linh hoạt, map title động
-                    $currentBase = $moduleName;
-                    $lastTitle = '';
-                    while (count($routeParts) > 0) {
-                        $sub = array_shift($routeParts);
-                        $subTitle = __(Str::title($sub)); // Default
-                        // Custom title cho sub common (có thể mở rộng map này nếu cần, nhưng giữ linh hoạt không hardcode quá nhiều)
-                        $subTitle = match ($sub) {
-                            'serials' => 'Danh sách mã Serial',
-                            'maintenance-log' => 'Nhật ký bảo dưỡng',
-                            default => $subTitle,
-                        };
-                        $url = $this->safeRoute("{$currentBase}.{$sub}", Route::current()->parameters()); // Use current params, safe
-                        // Fix duplicate: Skip nếu title trùng last
-                        if ($subTitle !== $lastTitle) {
-                            $breadcrumbs[] = [
-                                'title' => $subTitle,
-                                'url' => $url,
-                            ];
-                            $lastTitle = $subTitle;
-                        }
-                        $currentBase .= ".{$sub}";
-                    }
-
-                    $found = true;
-                    break 2;
-                }
-            }
-        }
-
-        // Fallback generic nếu không tìm thấy trong ModuleConst (sửa thêm check Route::has để tránh error) - Linh hoạt
-        if (!$found) {
-            $currentBase = '';
-            $lastTitle = '';
-            foreach ($routeParts as $part) {
-                $tempBase = $currentBase . ($currentBase ? '.' : '') . $part;
-                $title = __(Str::title($part));
-                $url = $this->safeRoute($tempBase); // Safe
-                if ($title !== $lastTitle) {
-                    $breadcrumbs[] = ['title' => $title, 'url' => $url];
-                    $lastTitle = $title;
-                }
-                $currentBase = $tempBase;
-            }
-        }
+    protected function autoBuildFromRoute(string $currentRoute, array &$breadcrumbs): void { 
+        $routeParts = explode('.', $currentRoute); // e.g., ['admin', 'equipment', 'serials'] hoặc không có 'admin' 
+        if (count($routeParts) < 1) return; 
+        // Bỏ prefix 'admin.' nếu có (match name full) 
+        if ($routeParts[0] === 'admin') array_shift($routeParts); 
+        $moduleName = array_shift($routeParts); // e.g., 'equipment' (kebab) 
+        // Tính fullModuleName để lấy trans (e.g., 'equipment_management') 
+        $moduleSnake = str_replace('-', '_', $moduleName); 
+        $fullModuleName = $moduleSnake . '_management'; 
+        // Tìm module từ ModuleConst (match kebab_name) - Linh hoạt, loop động 
+        $modulesWithCategories = ModuleConst::getModulesWithCategories(); 
+        $found = false; 
+        foreach ($modulesWithCategories as $category) { 
+            foreach ($category['modules'] as $module) { 
+                if (($module['name'] ?? '') === $moduleName) { // An toàn, check isset 
+                    // Chỉ thêm category nếu có route thực (không '#') - sửa để bỏ thừa "System Management" 
+                    if (Route::has($category['key'] . '.index')) { // Giả sử category có route index 
+                        $breadcrumbs[] = ['title' => __($category['label']), 'url' => $this->safeRoute($category['key'] . '.index')]; 
+                    } 
+                    // Thêm module index với title custom (e.g., 'Quản lý thiết bị') 
+                    $breadcrumbs[] = [ 
+                        'title' => __($module['label'] ?? 'Quản lý ' . Str::title($moduleName)), 
+                        'url' => $this->safeRoute("{$moduleName}.index"), 
+                    ]; 
+                    // Xử lý sub-parts và action (e.g., 'serials' -> 'Danh sách mã Serial') - Linh hoạt, map title động 
+                    $currentBase = $moduleName; 
+                    $lastTitle = ''; 
+                    while (count($routeParts) > 0) { 
+                        $sub = array_shift($routeParts); 
+                        if ($sub === 'index') continue; // Skip 'index' để tránh duplicate với module 
+                        // Ưu tiên title từ translation nếu tồn tại (e.g., 'equipment_management.edit' -> 'Chỉnh sửa thiết bị') 
+                        $potentialKey = $fullModuleName . '.' . $sub; 
+                        $subTitle = __($potentialKey); 
+                        if ($subTitle === $potentialKey) { // Không có trans, fallback match hoặc Str::title 
+                            $subTitle = match ($sub) { 
+                                'serials' => 'Danh sách mã Serial', 
+                                'maintenance-log' => 'Nhật ký bảo dưỡng', 
+                                default => __(Str::title($sub)), 
+                            }; 
+                        } 
+                        $url = $this->safeRoute("{$currentBase}.{$sub}", Route::current()->parameters()); // Use current params, safe 
+                        // Fix duplicate: Skip nếu title trùng last 
+                        if ($subTitle !== $lastTitle) { 
+                            $breadcrumbs[] = [ 
+                                'title' => $subTitle, 
+                                'url' => $url, 
+                            ]; 
+                            $lastTitle = $subTitle; 
+                        } 
+                        $currentBase .= ".{$sub}"; 
+                    } 
+                    $found = true; 
+                    break 2; 
+                } 
+            } 
+        } 
+        // Fallback generic nếu không tìm thấy trong ModuleConst (sửa thêm check Route::has để tránh error) - Linh hoạt 
+        if (!$found) { 
+            $currentBase = ''; 
+            $lastTitle = ''; 
+            foreach ($routeParts as $part) { 
+                if ($part === 'index') continue; // Skip 'index' ở fallback 
+                $tempBase = $currentBase . ($currentBase ? '.' : '') . $part; 
+                $title = __(Str::title($part)); 
+                $url = $this->safeRoute($tempBase); // Safe 
+                if ($title !== $lastTitle) { 
+                    $breadcrumbs[] = ['title' => $title, 'url' => $url]; 
+                    $lastTitle = $title; 
+                } 
+                $currentBase = $tempBase; 
+            } 
+        } 
     }
 
     /**
@@ -242,8 +263,8 @@ class BreadcrumbService
      * Nâng cao: Hỗ trợ fetch dynamic tên từ model (e.g., tên equipment/serial từ id param)
      * - Linh hoạt: Detect từ route parts động (e.g., route parts map sang model class via convention Str::studly(singular(part)))
      * - Xử lý nested params động: Loop qua params theo thứ tự route parts (e.g., param1 cho model1, param2 cho model2)
-     * - Insert item name vào vị trí đúng (sau module index, trước sub-action) - e.g., insert 'Màn hình LCD Dell' sau 'Quản lý thiết bị'
-     * - Fix duplicate: Replace placeholder nếu cần, hoặc insert tại index chính xác (tìm vị trí module index)
+     * - Insert item name vào vị trí đúng (sau module index, trước sub-action) - e.g., insert 'Màn hình LCD Dell' sau 'Quản lý thiết bị' và trước 'Edit'
+     * - Fix order/duplicate: Tìm vị trí action (last) và insert trước nó nếu action là 'edit/create' etc.
      * - Cache model per request để tối ưu (không query lặp)
      * - Mở rộng dễ: Khi thêm module mới (e.g., MaintenanceLog), chỉ cần route convention (e.g., 'equipment.serials.maintenance-log.{maintenance_log_id}')
      *   - Service sẽ auto detect model từ 'maintenance-log' -> App\Models\MaintenanceLog, fetch tên từ $item->name hoặc fallback
@@ -261,9 +282,11 @@ class BreadcrumbService
         $paramIndex = 0; // Theo thứ tự param
 
         // Loop qua route parts để map model động (bỏ action cuối nếu là 'index/create/edit/serials' etc.)
-        $modelParts = array_slice($routeParts, 0, -1); // e.g., ['equipment'] cho 'equipment.serials'
-        $moduleIndex = -1; // Tìm vị trí module index trong breadcrumbs để insert sau
+        $modelParts = array_slice($routeParts, 0, -1); // e.g., ['equipment'] cho 'equipment.edit'
+        $action = end($routeParts); // e.g., 'edit'
+        $actionIndex = count($breadcrumbs) - 1; // Giả sử action là last, sẽ adjust
 
+        $moduleIndex = -1; // Tìm vị trí module index
         foreach ($breadcrumbs as $idx => $crumb) {
             if (str_contains($crumb['url'], ".{$routeParts[0]}.index")) {
                 $moduleIndex = $idx;
@@ -299,10 +322,14 @@ class BreadcrumbService
                     $showRoute = implode('.', array_slice($routeParts, 0, $index + 1)) . '.show';
                     $url = $this->safeRoute($showRoute, array_slice($parameters, 0, $paramIndex + 1)); // Chỉ params đến hiện tại
 
-                    // Insert vào sau module index (e.g., sau 'Quản lý thiết bị')
+                    // Insert vào sau module index, trước action (e.g., trước 'Edit')
                     if ($moduleIndex !== -1) {
-                        array_splice($breadcrumbs, $moduleIndex + 1, 0, [['title' => $itemTitle, 'url' => $url]]);
-                        $moduleIndex++; // Adjust for next insert if nested
+                        $insertPos = $moduleIndex + 1; // Sau module
+                        if (in_array($action, ['edit', 'create', 'show'])) { // Nếu có action, insert trước last (action)
+                            $insertPos = count($breadcrumbs); // Append trước khi thêm action, nhưng vì action chưa thêm, adjust in autoBuild
+                        }
+                        array_splice($breadcrumbs, $insertPos, 0, [['title' => $itemTitle, 'url' => $url]]);
+                        $moduleIndex++; // Adjust for next
                     } else {
                         $breadcrumbs[] = ['title' => $itemTitle, 'url' => $url]; // Fallback append
                     }
