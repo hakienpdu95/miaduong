@@ -9,16 +9,20 @@ class MaintenanceLog extends Model
     protected $fillable = [
         'equipment_qr_code_id',
         'maintenance_type_id',
-        'maintenance_time',
-        'performer_id',
+        'start_date',
+        'end_date',
+        'performer',
         'description',
         'status',
         'setup_time',
+        'created_by',
+        'updated_by',
     ];
 
     protected $casts = [
         'status' => 'string', 
-        'maintenance_time' => 'date',
+        'start_date' => 'date',
+        'end_date' => 'date',
         'setup_time' => 'date',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -32,10 +36,5 @@ class MaintenanceLog extends Model
     public function maintenanceType()
     {
         return $this->belongsTo(MaintenanceType::class, 'maintenance_type_id');
-    }
-
-    public function performer()
-    {
-        return $this->belongsTo(User::class, 'performer_id');
     }
 }
