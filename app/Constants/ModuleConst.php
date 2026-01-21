@@ -28,23 +28,19 @@ final class ModuleConst
         if (!empty(self::$moduleConfigs)) {
             return; // Load chỉ 1 lần
         }
-
         $moduleDirs = glob(app_path('Http/Controllers/Backend/*'), GLOB_ONLYDIR);
         foreach ($moduleDirs as $dir) {
             $modulePascal = basename($dir); // e.g., 'Role'
             $configFile = $dir . '/config.php';
-
             if (File::exists($configFile)) {
                 $config = require $configFile;
                 $moduleSnake = strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $modulePascal));
                 $fullModuleName = $moduleSnake . '_management';
-
                 self::$moduleConfigs[$fullModuleName] = array_merge([
                     'pascal_name' => $modulePascal,
                     'snake_name' => $moduleSnake,
                     'kebab_name' => str_replace('_', '-', $moduleSnake),
                 ], $config);
-
                 self::$moduleLabels[$fullModuleName] = $config['label'] ?? ucfirst(str_replace('_', ' ', $moduleSnake));
             }
         }
@@ -64,6 +60,7 @@ final class ModuleConst
 
     /**
      * Get all modules with their categories, labels, icons, and children.
+     * Bổ sung lọc visible (nếu visible = false, bỏ qua module).
      *
      * @return array
      */
@@ -71,8 +68,13 @@ final class ModuleConst
     {
         self::loadConfigs();
         $categories = [];
-
         foreach (self::$moduleConfigs as $fullModuleName => $config) {
+            // Lọc: Chỉ lấy module có visible = true (hoặc không set, mặc định true)
+            $visible = $config['visible'] ?? true;
+            if (!$visible) {
+                continue; // Bỏ qua module ẩn
+            }
+
             $categoryKey = $config['category'] ?? 'uncategorized';
             if (!isset($categories[$categoryKey])) {
                 $categories[$categoryKey] = [
@@ -89,12 +91,12 @@ final class ModuleConst
                 'full_name' => $fullModuleName,
             ];
         }
-
         return array_values($categories); // Trả về mảng để dễ loop
     }
 
     /**
      * Get authorized modules for a user based on their permissions.
+     * Đã tích hợp lọc visible từ getModulesWithCategories().
      *
      * @param \App\Models\User|null $user
      * @return array
@@ -104,18 +106,15 @@ final class ModuleConst
         if (!$user) {
             return [];
         }
-
         self::loadConfigs();
         $categories = [];
-
-        foreach (self::getModulesWithCategories() as $category) {
+        foreach (self::getModulesWithCategories() as $category) { // Sử dụng method đã lọc visible
             $authorizedModules = [];
             foreach ($category['modules'] as $module) {
                 if ($user->hasPermission($module['full_name'], self::ACTION_VIEW)) {
                     $authorizedModules[] = $module;
                 }
             }
-
             if (!empty($authorizedModules)) {
                 $categories[] = [
                     'key' => $category['key'],
@@ -124,7 +123,6 @@ final class ModuleConst
                 ];
             }
         }
-
         return $categories;
     }
 

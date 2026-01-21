@@ -8,4 +8,5 @@ return [
         ['name' => 'maintenance-log.index', 'label' => 'maintenance_log_management.index'],
         ['name' => 'maintenance-log.create', 'label' => 'maintenance_log_management.create'],
     ],
+    'visible' => false,
 ];

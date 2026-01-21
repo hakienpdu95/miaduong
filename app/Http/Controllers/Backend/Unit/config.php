@@ -8,4 +8,5 @@ return [
         ['name' => 'unit.index', 'label' => 'unit_management.index'],
         ['name' => 'unit.create', 'label' => 'unit_management.create'],
     ],
+    'visible' => true,
 ];

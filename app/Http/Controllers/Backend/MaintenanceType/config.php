@@ -8,4 +8,5 @@ return [
         ['name' => 'maintenance-type.index', 'label' => 'maintenance_type_management.index'],
         ['name' => 'maintenance-type.create', 'label' => 'maintenance_type_management.create'],
     ],
+    'visible' => true,
 ];

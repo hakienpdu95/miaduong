@@ -8,4 +8,5 @@ return [
         ['name' => 'equipment.index', 'label' => 'equipment_management.index'],
         ['name' => 'equipment.create', 'label' => 'equipment_management.create'],
     ],
+    'visible' => true,
 ];

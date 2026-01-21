@@ -7,4 +7,5 @@ return [
         ['name' => 'user.index', 'label' => 'user_management.index'],
         ['name' => 'user.create', 'label' => 'user_management.create'],
     ],
+    'visible' => true,
 ];

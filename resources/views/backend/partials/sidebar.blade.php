@@ -24,7 +24,7 @@
                                     <!-- Dashboard -->
                                     <li class="slide__category"><span class="category-name">{{ __('Dashboard') }}</span></li>
                                     <li class="slide {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-                                        <a href="#" class="side-menu__item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                                        <a href="{{route('admin.dashboard')}}" class="side-menu__item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                                             <i class="fa-light fa-house me-2"></i>
                                             <span class="side-menu__label">{{ __('Dashboard') }}</span>
                                         </a>

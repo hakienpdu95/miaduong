@@ -8,4 +8,5 @@ return [
         ['name' => 'role.index', 'label' => 'role_management.index'],
         ['name' => 'role.create', 'label' => 'role_management.create'],
     ],
+    'visible' => false,
 ];
