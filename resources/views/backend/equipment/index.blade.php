@@ -91,20 +91,24 @@
 @endsection
 
 @push('styles')
-    @vite(['resources/css/dataTables.css'], 'build/backend')
-    @vite(['resources/css/choices.css'], 'build/backend')
+    @vite(['resources/css/dataTables.css', 'resources/css/choices.css'], 'build/backend')
 @endpush
 
 @push('scripts')
-    @vite(['resources/js/modules/dataTables.js'], 'build/backend')
-    @vite(['resources/js/modules/choices.js'], 'build/backend')
+    @vite(['resources/js/modules/dataTables.js', 'resources/js/modules/choices.js'], 'build/backend')
     <script>
         window.addEventListener('load', function() {
             $(document).ready(function() {
-                // Init Choices for filter selects
+                // Init Choices for filter selects và lưu instances
                 const choicesElements = document.querySelectorAll('.choices');
+                const choicesInstances = []; // Array để lưu instances
                 choicesElements.forEach(element => {
-                    new Choices(element, { searchEnabled: true, itemSelectText: '', shouldSort: false, });
+                    const instance = new Choices(element, {
+                        searchEnabled: true,
+                        itemSelectText: '',
+                        shouldSort: false,
+                    });
+                    choicesInstances.push(instance); // Lưu instance để reuse
                 });
 
                 let table = $('#equipments-table').DataTable({
@@ -166,8 +170,10 @@
                 // Reset filters
                 $('#reset-filter').on('click', function() {
                     $('#filter-form')[0].reset();
-                    // Reset Choices selects
-                    choicesElements.forEach(element => { element.setChoiceByValue(''); });
+                    // Reset Choices instances (sử dụng instances đã lưu)
+                    choicesInstances.forEach(instance => {
+                        instance.setChoiceByValue('');
+                    });
                     table.draw();
                 });
 
@@ -192,7 +198,6 @@
                     }
                 });
 
-                // Bổ sung: Xử lý click nút export với filters (append params vào URL)
                 $('#export-all-btn').on('click', function(e) {
                     e.preventDefault();
                     let url = '{{ route('admin.equipment.export-all') }}?';
