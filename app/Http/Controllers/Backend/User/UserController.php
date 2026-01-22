@@ -20,7 +20,7 @@ class UserController extends Controller
     {
         return view('backend.user.index');
     }
-    
+
     /**
      * Show the form for creating a new resource.
      */
@@ -36,7 +36,6 @@ class UserController extends Controller
     public function store(UserRequest $request)
     {
         $validated = $request->validated();
-
         DB::beginTransaction();
         try {
             $userData = [
@@ -46,7 +45,6 @@ class UserController extends Controller
                 'password' => $validated['password'], // Sẽ được hashed tự động qua casts
                 'is_active' => true, // Mặc định active
             ];
-
             $user = User::create($userData);
 
             // Gán vai trò dựa trên account_type
@@ -62,7 +60,6 @@ class UserController extends Controller
                 'account_type' => $validated['account_type'],
                 'unit_id' => $validated['unit_id'],
             ];
-
             $user->profile()->create($profileData);
 
             DB::commit();
@@ -70,6 +67,49 @@ class UserController extends Controller
         } catch (Exception $e) {
             DB::rollback();
             return redirect()->back()->withInput()->with('error', 'Lỗi khi tạo tài khoản: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit($id)
+    {
+        $user = User::findOrFail($id);
+        $profile = $user->profile;
+        $units = Unit::all();
+        return view('backend.user.edit', compact('user', 'profile', 'units'));
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UserRequest $request, $id)
+    {
+        $user = User::findOrFail($id);
+        $validated = $request->validated();
+        DB::beginTransaction();
+        try {
+            $userData = [
+                'username' => $validated['username'],
+                'name' => $validated['name'] ?? null,
+                'email' => $validated['email'] ?? null,
+                'is_active' => $validated['is_active'] ?? $user->is_active, // Giữ nguyên nếu không thay đổi
+            ];
+
+            $user->update($userData);
+
+            $profileData = [
+                'unit_id' => $validated['unit_id'],
+            ];
+
+            $user->profile->update($profileData);
+
+            DB::commit();
+            return redirect()->route('user.index')->with('success', 'Tài khoản đã được cập nhật thành công.');
+        } catch (Exception $e) {
+            DB::rollback();
+            return redirect()->back()->withInput()->with('error', 'Lỗi khi cập nhật tài khoản: ' . $e->getMessage());
         }
     }
 }

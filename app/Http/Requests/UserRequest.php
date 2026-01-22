@@ -22,14 +22,28 @@ class UserRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $userId = $this->route('id') ?? null; // Lấy ID từ route parameter (cho update)
+
+        $rules = [
             'account_type' => ['required', Rule::in(['warehouse_management', 'foreman'])],
             'unit_id' => ['required', 'exists:units,id'],
-            'username' => ['required', 'string', 'max:255', 'unique:users,username'],
+            'username' => ['required', 'string', 'max:255'],
             'name' => ['nullable', 'required_if:account_type,warehouse_management', 'string', 'max:255'],
-            'password' => ['required', 'confirmed', 'min:8'],
             'email' => ['nullable'],
         ];
+
+        // Rules khác nhau cho create (POST) và update (PATCH/PUT)
+        if ($this->isMethod('post')) {
+            // Create: Password required, username unique full
+            $rules['password'] = ['required', 'confirmed', 'min:8'];
+            $rules['username'][] = 'unique:users,username';
+        } elseif ($this->isMethod('patch') || $this->isMethod('put')) {
+            // Update: Password optional (nullable), username unique ignore current ID
+            $rules['password'] = ['nullable', 'confirmed', 'min:8'];
+            $rules['username'][] = Rule::unique('users')->ignore($userId);
+        }
+
+        return $rules;
     }
 
     /**

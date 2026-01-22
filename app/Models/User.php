@@ -19,6 +19,13 @@ class User extends Authenticatable
     use HasPermissions, Notifiable, SoftDeletes;
 
     /**
+     * Cache permissions per instance (thay static để tránh shared giữa users).
+     *
+     * @var array|null
+     */
+    protected ?array $permissionsCache = null;
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -116,11 +123,8 @@ class User extends Authenticatable
      */
     public function getAllPermissions(): array
     {
-        // Cache nội bộ per request (static để tránh query lặp, reset per request)
-        static $permissionsCache = null;
-
-        if ($permissionsCache !== null) {
-            return $permissionsCache;
+        if ($this->permissionsCache !== null) {
+            return $this->permissionsCache;
         }
 
         $permissions = [];
@@ -129,7 +133,7 @@ class User extends Authenticatable
         $personalPermissions = $this->permissions()
             ->where(function ($query) {
                 $query->whereNull('expired_at')
-                      ->orWhere('expired_at', '>', now());
+                    ->orWhere('expired_at', '>', now());
             })
             ->get()
             ->map(function ($permission) {
@@ -173,8 +177,7 @@ class User extends Authenticatable
             );
         }
 
-        $permissionsCache = $permissions;
-
+        $this->permissionsCache = $permissions;
         return $permissions;
     }
 

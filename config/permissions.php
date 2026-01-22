@@ -8,18 +8,25 @@ return [
                 'can_edit' => true,
                 'can_delete' => true,
             ],
-            'role_management' => [
+            'equipment_management' => [
                 'can_view' => true,
                 'can_create' => true,
                 'can_edit' => true,
+                'can_delete' => true,
             ],
-            // Thêm các module khác nếu cần
+            'maintenance_type_management' => [
+                'can_view' => true,
+                'can_create' => true,
+                'can_edit' => true,
+                'can_delete' => true,
+            ],
         ],
         'warehouse_management' => [
-            'user_management' => [
+            'unit_management' => [
                 'can_view' => true,
                 'can_create' => true,
                 'can_edit' => true,
+                'can_delete' => true,
             ],
             'equipment_management' => [
                 'can_view' => true,
@@ -28,14 +35,13 @@ return [
                 'can_delete' => true,
             ],
         ],
-        // 'commune' => [
-        //     'enterprise_management' => [
-        //         'can_view' => true,
-        //         'can_create' => false,
-        //         'can_edit' => false,
-        //         'can_delete' => false,
-        //     ],
-        // ],
-        // Thêm các vai trò khác: content_manager, shop_manager, v.v.
+        'foreman' => [
+            'maintenance_log_management' => [
+                'can_view' => true,
+                'can_create' => true,
+                'can_edit' => true,
+                'can_delete' => true,
+            ],
+        ],
     ],
 ];

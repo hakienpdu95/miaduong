@@ -41,7 +41,7 @@ php artisan config:clear
 php artisan config:cache
 php artisan optimize:clear
 
-php artisan cache:clear & php artisan route:clear & php artisan config:clear & php artisan config:cache & php artisan optimize:clear
+php artisan cache:clear && php artisan route:clear && php artisan config:clear && php artisan config:cache && php artisan optimize:clear
 
 
 ## Đồng bộ database khi cập nhật ModuleConst

@@ -12,7 +12,7 @@ class RolePermissionSeeder extends Seeder
     {
         $permissionsConfig = config('permissions.roles');
         $modules = Module::pluck('name')->toArray();
-
+        RolePermission::truncate();
         foreach ($permissionsConfig as $roleName => $modulePermissions) {
             $role = Role::where('name', $roleName)->first();
             if (!$role) {
