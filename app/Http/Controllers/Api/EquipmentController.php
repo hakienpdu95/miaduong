@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Equipment;
+use App\Models\EquipmentQrCode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 
 class EquipmentController extends Controller
@@ -15,6 +17,14 @@ class EquipmentController extends Controller
         $query = Equipment::select($columns)
             ->with(['unit:id,name'])
             ->withCount('qrCodes'); // Tối ưu: Load count serial batch (1 query cho toàn trang)
+
+        // Thêm subqueries cho min và max serial để tránh N+1 queries
+        $query->addSelect([
+            'min_serial' => EquipmentQrCode::selectRaw('min(serial_number)')
+                ->whereColumn('equipment_id', 'equipments.id'),
+            'max_serial' => EquipmentQrCode::selectRaw('max(serial_number)')
+                ->whereColumn('equipment_id', 'equipments.id'),
+        ]);
 
         // Optional: Show soft deleted nếu param ?withTrashed=1
         if ($request->filled('withTrashed')) {
@@ -35,6 +45,13 @@ class EquipmentController extends Controller
 
         if ($request->filled('filter_import_method')) {
             $query->where('import_method', $request->filter_import_method);
+        }
+
+        // Bổ sung: Filter theo serial_number từ EquipmentQrCode
+        if ($request->filled('filter_serial')) {
+            $query->whereHas('qrCodes', function ($q) use ($request) {
+                $q->where('serial_number', 'like', '%' . $request->filter_serial . '%');
+            });
         }
 
         return DataTables::eloquent($query)
@@ -67,6 +84,15 @@ class EquipmentController extends Controller
             ->addColumn('serial_count', function ($equipment) {
                 return $equipment->qr_codes_count; // Sử dụng count đã load từ withCount
             })
+            ->addColumn('name', function ($equipment) {
+                $serialInfo = '';
+                if ($equipment->qr_codes_count > 0) {
+                    $minSerial = $equipment->min_serial ?? 'N/A';
+                    $maxSerial = $equipment->max_serial ?? 'N/A';
+                    $serialInfo = '<br><small>Tổng số: ' . $equipment->qr_codes_count . ' tem<br>Serial từ: ' . $minSerial . ' đến: ' . $maxSerial . '</small>';
+                }
+                return $equipment->name . $serialInfo;
+            })
             ->addColumn('actions', function ($equipment) {
                 return '<a href="' . route('equipment.edit', $equipment->id) . '" class="btn btn-sm btn-primary me-1"><i class="fa-light fa-pen-to-square"></i></a>' .
                        '<a href="' . route('admin.equipment.serials', $equipment->id) . '" class="btn btn-sm btn-info me-1"><i class="fa fa-qrcode"></i></a>' .
@@ -81,7 +107,7 @@ class EquipmentController extends Controller
                     $q->where('name', 'like', "%{$keyword}%");
                 });
             })
-            ->rawColumns(['actions'])
+            ->rawColumns(['name', 'actions']) // Thêm 'name' để render HTML
             ->make(true);
     }
 

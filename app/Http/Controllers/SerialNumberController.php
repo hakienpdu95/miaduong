@@ -8,6 +8,6 @@ class SerialNumberController extends Controller
 {
     public function getSerialNumber($serial_number)
     {
-        dd('giao dien quet tem');
+        return view('pages.serial-number');
     }
 }

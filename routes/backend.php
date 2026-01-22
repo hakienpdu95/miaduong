@@ -9,4 +9,5 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
 
     Route::get('/equipment/{id}/serials', [EquipmentController::class, 'serials'])->name('equipment.serials'); 
     Route::get('/equipment/{id}/export-serials', [EquipmentController::class, 'exportSerials'])->name('equipment.export-serials');
+    Route::get('/equipment/export/all', [EquipmentController::class, 'exportAll'])->name('equipment.export-all');
 });

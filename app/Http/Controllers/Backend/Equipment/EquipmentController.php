@@ -11,6 +11,7 @@ use App\Models\SerialCounter;
 use App\Models\Unit;
 use App\Services\ImageUploadService;
 use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Rap2hpoutre\FastExcel\FastExcel;
@@ -215,5 +216,51 @@ class EquipmentController extends Controller
 
         // Generate and download Excel
         return (new FastExcel($data))->download($equipment->sku . '_serials.xlsx');
+    }
+
+    // Thêm method mới (hoặc cập nhật nếu có)
+    public function exportAll(Request $request)
+    {
+        // Query với filters (tương tự datatable)
+        $query = Equipment::query()
+            ->with(['unit:id,name']);
+
+        if ($request->filled('filter_sku')) {
+            $query->where('sku', 'like', '%' . $request->filter_sku . '%');
+        }
+        if ($request->filled('filter_name')) {
+            $query->where('name', 'like', '%' . $request->filter_name . '%');
+        }
+        if ($request->filled('filter_unit_type')) {
+            $query->where('unit_type', $request->filter_unit_type);
+        }
+        if ($request->filled('filter_import_method')) {
+            $query->where('import_method', $request->filter_import_method);
+        }
+        if ($request->filled('filter_serial')) {
+            $query->whereHas('qrCodes', function ($q) use ($request) {
+                $q->where('serial_number', 'like', '%' . $request->filter_serial . '%');
+            });
+        }
+
+        $equipments = $query->get();
+
+        // Prepare data collection cho Excel (chỉ 2 cột như yêu cầu)
+        $data = $equipments->map(function ($equipment) {
+            return [
+                'Tên thiết bị' => $equipment->name,
+                'Đơn vị tính' => $this->getUnitTypeLabel($equipment->unit_type), // Helper cho label
+            ];
+        });
+
+        // Download Excel
+        return (new FastExcel($data))->download('danh_sach_thiet_bi.xlsx');
+    }
+
+    // Helper cho label đơn vị tính (copy từ code cũ)
+    private function getUnitTypeLabel($type)
+    {
+        $labels = ['box' => 'Hộp', 'set_kit' => 'Bộ', 'device_equipment' => 'Thiết bị', 'piece_item' => 'Cái', 'unit_piece' => 'Chiếc'];
+        return $labels[$type] ?? $type;
     }
 }
