@@ -9,11 +9,10 @@ use App\Models\Equipment;
 use App\Models\EquipmentQrCode;
 use App\Models\SerialCounter;
 use App\Models\Unit;
+use App\Services\ImageUploadService;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Rap2hpoutre\FastExcel\FastExcel;
 
 /**
@@ -21,6 +20,13 @@ use Rap2hpoutre\FastExcel\FastExcel;
  */
 class EquipmentController extends Controller
 {
+    protected $imageUploadService;
+
+    public function __construct(ImageUploadService $imageUploadService)
+    {
+        $this->imageUploadService = $imageUploadService;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -61,8 +67,7 @@ class EquipmentController extends Controller
             ];
 
             if ($request->hasFile('image')) {
-                $path = $request->file('image')->store('equipments/images', 'public');
-                $data['image_path'] = Storage::url($path);
+                $data['image_path'] = $this->imageUploadService->upload($request->file('image'));
             }
 
             if ($validated['import_method'] === 'batch_series') {
@@ -72,6 +77,7 @@ class EquipmentController extends Controller
             $equipment = Equipment::create($data);
 
             $userId = Auth::id();
+
             // Linh hoạt prefix dựa trên bảng chữ cái (ví dụ: map theo unit_type)
             // Bạn có thể customize map này theo nhu cầu (A cho box, B cho set_kit, v.v.)
             // Hoặc dựa trên import_date, unit_id, hoặc config từ DB
@@ -142,12 +148,10 @@ class EquipmentController extends Controller
             ];
 
             if ($request->hasFile('image')) {
-                // Xóa image cũ nếu có
-                if ($equipment->image_path) {
-                    Storage::delete(str_replace('/storage/', 'public/', $equipment->image_path));
-                }
-                $path = $request->file('image')->store('equipments/images', 'public');
-                $data['image_path'] = Storage::url($path);
+                $data['image_path'] = $this->imageUploadService->upload(
+                    $request->file('image'),
+                    $equipment->image_path // Truyền path cũ để xóa nếu tồn tại
+                );
             }
 
             $equipment->update($data);

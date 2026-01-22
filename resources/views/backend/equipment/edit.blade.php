@@ -47,10 +47,10 @@
                     <div class="mb-3">
                         <label for="image" class="form-label">Hình ảnh</label>
                         <input type="file" class="form-control" id="image" name="image">
-                        @if ($equipment->image_path)
-                            <img src="{{ $equipment->image_path }}" alt="Hình ảnh hiện tại" class="img-thumbnail mt-2" style="max-width: 200px;">
-                        @endif
-                        @error('image') <span class="text-danger">{{ $message }}</span> @enderror
+                        <img src="{{ $equipment->image_url }}" alt="Hình ảnh hiện tại" class="img-thumbnail mt-2" style="max-width: 200px;">
+                        @error('image')
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
                     </div>
                     <div class="mb-3">
                         <label for="import_date" class="form-label">Ngày nhập thiết bị</label>

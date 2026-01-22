@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Equipment extends Model
 {
@@ -50,5 +51,14 @@ class Equipment extends Model
     public function manager()
     {
         return $this->belongsTo(User::class, 'managed_by');
+    }
+
+    public function getImageUrlAttribute(): string
+    {
+        if (!$this->image_path || !Storage::disk('public')->exists($this->image_path)) {
+            return config('app.placeholder_image');
+        }
+
+        return Storage::url($this->image_path);
     }
 }
