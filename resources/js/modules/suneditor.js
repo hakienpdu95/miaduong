@@ -28,7 +28,10 @@ function destroySunEditor(editor) {
 function deleteEditorImage(fullUrl) {
     fetch('/api/upload/editor-images/revert', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, // Thêm CSRF nếu dùng session auth
+        },
         body: JSON.stringify({ full_url: fullUrl }),
     })
     .then(response => response.json())
@@ -64,11 +67,14 @@ function initializeSunEditor(editor) {
         console.log('Skipping SunEditor initialization for editor:', editor.id, 'Already initialized or missing data attributes');
         return;
     }
+
     const editorId = `editor-${editor.dataset.index}-${editor.dataset.input}`;
     editor.id = editorId;
     editor.classList.add('suneditor-initialized');
     console.log('Initializing SunEditor for editor:', editorId);
+
     const editorHeight = editor.dataset.height || '200px';
+
     try {
         const suneditor = SunEditor.create(editor, {
             plugins: plugins,
@@ -89,35 +95,35 @@ function initializeSunEditor(editor) {
             imageFileInput: true,
             imageUrlInput: false,
             imageUploadHeader: null,
-            imageUploadUrl: '/api/upload/editor-images',
+            imageUploadUrl: '/api/upload/editor-images', // Không dùng, vì xử lý manual ở onImageUploadBefore
             defaultStyle: 'font-size: 20px;',
             attributesWhitelist: {
                 'img': 'data-editor-image-id|data-module-id|data-proportion|data-align|data-file-name|data-file-size|data-origin|data-size|data-rotate|data-percentage|origin-size|style|alt|src'
             }
         });
+
         suneditor.uploadedImages = new Set();
-        suneditor.uploadedImageIds = new Map(); // Map src to editor_image_id
+
         const contentInput = document.querySelector(`#${editor.dataset.input}`);
         if (!contentInput) {
             console.error(`Content input not found for editor ${editorId}, selector: #${editor.dataset.input}`);
             return;
         }
+
         if (contentInput.value) {
             suneditor.setContents(contentInput.value);
             console.log('Set initial content for SunEditor:', editorId, contentInput.value);
             const initialContent = suneditor.getContents();
-            const srcMatches = initialContent.matchAll(/<img[^>]*src="([^"]+)"[^>]*data-editor-image-id="(\d+)"[^>]*>/gi);
+            const srcMatches = initialContent.matchAll(/<img[^>]*src="([^"]+)"[^>]*>/gi);
             Array.from(srcMatches).forEach(match => {
                 const src = match[1];
-                const imageId = match[2];
-                if (src && src.includes('/storage/images/')) {
+                if (src && src.includes('/storage/uploads/')) {
                     suneditor.uploadedImages.add(src);
-                    suneditor.uploadedImageIds.set(src, imageId);
                 }
             });
             console.log('Initialized uploadedImages from existing content:', Array.from(suneditor.uploadedImages));
-            console.log('Initialized uploadedImageIds:', Array.from(suneditor.uploadedImageIds));
         }
+
         const debouncedDispatch = debounce((contents) => {
             try {
                 if (contentInput) {
@@ -130,53 +136,62 @@ function initializeSunEditor(editor) {
                 console.error('Error updating SunEditor content:', error);
             }
         }, 600);
+
         suneditor.onChange = (contents) => {
             debouncedDispatch(contents);
         };
+
         suneditor.onImageUploadBefore = (files, info, core, uploadHandler) => {
             if (!files || !files.length || !files[0]) {
                 console.warn('No valid files provided to onImageUploadBefore, skipping');
                 uploadHandler();
                 return;
             }
+
             const file = files[0];
             console.log('File type:', file.type);
+
             if (file && /^image\/(png|jpeg|jpg)$/.test(file.type)) {
                 const formData = new FormData();
                 formData.append('single_image', file);
+
                 fetch('/api/upload/editor-images', {
                     method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, // Thêm CSRF
+                    },
                     body: formData,
                 })
                 .then(response => response.json())
                 .then(data => {
                     console.log('Upload response:', data);
                     if (data.success && data.files && data.files.length > 0) {
-                        const imageUrl = window.location.origin + (data.files[0].full_url || data.files[0].full_url_webp);
-                        const editorImageId = data.files[0].editor_image_id;
-                        const originalName = data.files[0].name;
-                        const alt = data.files[0].alt || originalName;
-                        const width = data.files[0].width;
-                        const height = data.files[0].height;
-                        const moduleId = editor.dataset.postId || 'pending'; // Use 'pending' for create
-                        // Construct HTML mimicking SunEditor's image component structure
+                        const imageData = data.files[0];
+                        const imageUrl = imageData.full_url;
+                        const editorImageId = imageData.editor_image_id || 'temp-id'; // Fallback nếu không có
+                        const originalName = imageData.name;
+                        const alt = imageData.alt || originalName;
+                        const width = imageData.width;
+                        const height = imageData.height;
+
+                        // Insert HTML img với attributes
                         const imgHtml = `
                             <div class="se-component se-image-container __se__float-none" contenteditable="false">
                                 <figure>
-                                    <img src="${imageUrl}" alt="${alt}" data-proportion="true" data-align="none" data-file-name="${originalName}" data-file-size="0" data-origin="${width},${height}" data-size="${width},${height}" data-rotate="" data-percentage="auto,auto" origin-size="${width},${height}" data-editor-image-id="${editorImageId}" data-module-id="${moduleId}" style="max-width: 100%;">
+                                    <img src="${imageUrl}" alt="${alt}" data-proportion="true" data-align="none" data-file-name="${originalName}" data-file-size="0" data-origin="${width},${height}" data-size="${width},${height}" data-rotate="" data-percentage="auto,auto" origin-size="${width},${height}" data-editor-image-id="${editorImageId}" style="max-width: 100%;">
                                 </figure>
                             </div>
                         `;
-                        suneditor.insertHTML(imgHtml, true); // notCleaningData = true
+                        suneditor.insertHTML(imgHtml, true);
                         suneditor.uploadedImages.add(imageUrl);
-                        suneditor.uploadedImageIds.set(imageUrl, editorImageId);
+
                         const updatedContent = suneditor.getContents();
                         if (contentInput) {
                             contentInput.value = updatedContent;
                             contentInput.dispatchEvent(new Event('input', { bubbles: true }));
                             console.log('Image inserted and content updated:', imageUrl, updatedContent);
                         }
-                        uploadHandler(false); // Prevent default insertion
+                        uploadHandler(false); // Ngăn insert default
                     } else {
                         console.error('Upload failed:', data.message);
                         alert('Tải ảnh thất bại: ' + data.message);
@@ -194,13 +209,13 @@ function initializeSunEditor(editor) {
                 uploadHandler();
             }
         };
+
         suneditor.onImageUpload = (targetImgElement, index, state, imageInfo, remainingFilesCount) => {
             console.log('onImageUpload called:', { targetImgElement, index, state, imageInfo, remainingFilesCount });
             if (state === 'delete' && imageInfo && imageInfo.src) {
                 const fullUrl = imageInfo.src;
                 deleteEditorImage(fullUrl);
                 suneditor.uploadedImages.delete(fullUrl);
-                suneditor.uploadedImageIds.delete(fullUrl);
                 const updatedContent = suneditor.getContents();
                 if (contentInput) {
                     contentInput.value = updatedContent;
@@ -209,8 +224,10 @@ function initializeSunEditor(editor) {
                 }
             }
         };
+
         editor.__suneditor = suneditor;
         console.log('SunEditor initialized successfully:', editorId);
+
         const toolbar = document.querySelector(`#${editorId} .sun-editor .se-toolbar`);
         if (!toolbar) {
             console.error('SunEditor toolbar not found for editor:', editorId);
@@ -245,6 +262,7 @@ function observeEditors() {
         console.log('No blocks container found, skipping observer');
         return;
     }
+
     const debouncedCallback = debounce((mutations) => {
         let shouldProcess = false;
         mutations.forEach((mutation) => {
@@ -271,6 +289,7 @@ function observeEditors() {
             });
         }
     }, 300);
+
     const observer = new MutationObserver(debouncedCallback);
     observer.observe(container, { childList: true, subtree: true });
 }

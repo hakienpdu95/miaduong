@@ -8,6 +8,10 @@ use App\Http\Controllers\Api\MaintenanceTypeController;
 use App\Http\Controllers\Api\EquipmentController;
 use App\Http\Controllers\Api\EquipmentQrCodeController;
 use App\Http\Controllers\Api\MaintenanceLogController;
+use App\Http\Controllers\Api\EditorImageUploadController;
+
+Route::post('/upload/editor-images', [EditorImageUploadController::class, 'upload'])->name('api.upload.editor-images');
+Route::delete('/upload/editor-images/revert', [EditorImageUploadController::class, 'revert'])->name('api.upload.editor-images.revert');
 
 Route::middleware('api')->group(function () {
     Route::get('/units/datatable', [UnitController::class, 'datatable'])->name('api.units.datatable');
