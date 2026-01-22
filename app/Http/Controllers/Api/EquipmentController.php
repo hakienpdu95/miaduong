@@ -70,6 +70,7 @@ class EquipmentController extends Controller
             ->addColumn('actions', function ($equipment) {
                 return '<a href="' . route('equipment.edit', $equipment->id) . '" class="btn btn-sm btn-primary me-1"><i class="fa-light fa-pen-to-square"></i></a>' .
                        '<a href="' . route('admin.equipment.serials', $equipment->id) . '" class="btn btn-sm btn-info me-1"><i class="fa fa-qrcode"></i></a>' .
+                       '<a href="' . route('admin.equipment.export-serials', $equipment->id) . '" class="btn btn-sm btn-success me-1"><i class="fa fa-download"></i></a>' .
                        '<button class="btn btn-sm btn-danger delete-equipment" data-id="' . $equipment->id . '"><i class="fa-light fa-trash"></i></button>';
             })
             ->filterColumn('name', function ($query, $keyword) {
@@ -93,11 +94,4 @@ class EquipmentController extends Controller
         $equipment->delete();
         return response()->json(['success' => true, 'message' => 'Thiết bị đã được xóa thành công.']);
     }
-
-    // Optional: Bulk delete nếu cần mở rộng (gọi via POST /api/equipments/bulk-delete with ids array)
-    // public function bulkDestroy(Request $request) {
-    //     $request->validate(['ids' => 'required|array']);
-    //     Equipment::whereIn('id', $request->ids)->delete();
-    //     return response()->json(['success' => true, 'message' => 'Đã xóa các thiết bị thành công.']);
-    // }
 }

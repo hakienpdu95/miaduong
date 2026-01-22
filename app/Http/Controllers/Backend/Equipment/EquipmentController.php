@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Rap2hpoutre\FastExcel\FastExcel;
 
 /**
  * Controller for managing equipments in the backend.
@@ -193,5 +194,22 @@ class EquipmentController extends Controller
     {
         $equipment = Equipment::findOrFail($id);
         return view('backend.equipment.serials', compact('equipment'));
+    }
+
+    public function exportSerials($id)
+    {
+        $equipment = Equipment::findOrFail($id);
+        $qrCodes = $equipment->qrCodes()->select('serial_number')->get();
+
+        // Prepare data as collection
+        $data = $qrCodes->map(function ($qr) {
+            return [
+                'serial_number' => $qr->serial_number,
+                'qr_link' => url('/serial/' . $qr->serial_number),
+            ];
+        });
+
+        // Generate and download Excel
+        return (new FastExcel($data))->download($equipment->sku . '_serials.xlsx');
     }
 }
