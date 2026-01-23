@@ -13,7 +13,12 @@ class SerialNumberController extends Controller
         $qrCode = EquipmentQrCode::where('serial_number', $serial_number)->firstOrFail();
 
         $equipment = $qrCode->equipment;
+
+        $maintenanceLogs = $qrCode->maintenanceLogs()
+                                   ->with('maintenanceType')
+                                   ->orderBy('start_date', 'desc')
+                                   ->get();
         
-        return view('pages.serial-number', compact('qrCode', 'equipment'));
+        return view('pages.serial-number', compact('qrCode', 'equipment', 'maintenanceLogs'));
     }
 }

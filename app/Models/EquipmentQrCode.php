@@ -38,4 +38,9 @@ class EquipmentQrCode extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
+
+    public function maintenanceLogs()
+    {
+        return $this->hasMany(MaintenanceLog::class, 'equipment_qr_code_id');
+    }
 }
