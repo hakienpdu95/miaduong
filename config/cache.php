@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'default' => env('CACHE_DRIVER', 'redis'),
+    'default' => env('CACHE_DRIVER', 'file'),
 
     /*
     |--------------------------------------------------------------------------
@@ -71,18 +71,6 @@ return [
             ],
         ],
 
-        'redis' => [
-            'driver' => 'redis',
-            'connection' => 'cache',
-            'client' => env('REDIS_CLIENT', 'predis'),
-            'default' => [
-                'host' => env('REDIS_HOST', '127.0.0.1'),
-                'password' => env('REDIS_PASSWORD', null),
-                'port' => env('REDIS_PORT', 6379),
-                'database' => env('REDIS_CACHE_DB', 1),
-            ],
-        ],
-
         'dynamodb' => [
             'driver' => 'dynamodb',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -97,18 +85,4 @@ return [
         ],
 
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Cache Key Prefix
-    |--------------------------------------------------------------------------
-    |
-    | When utilizing the APC, database, memcached, Redis, and DynamoDB cache
-    | stores, there might be other applications using the same cache. For
-    | that reason, you may prefix every cache key to avoid collisions.
-    |
-    */
-
-    'prefix' => env('CACHE_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_cache_'),
-
 ];
