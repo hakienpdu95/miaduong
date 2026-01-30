@@ -58,7 +58,7 @@ class UserController extends Controller
             // Tạo profile
             $profileData = [
                 'account_type' => $validated['account_type'],
-                'unit_id' => $validated['unit_id'],
+                'unit_id' => $validated['unit_id'] ?? null,
             ];
             $user->profile()->create($profileData);
 
@@ -100,7 +100,7 @@ class UserController extends Controller
             $user->update($userData);
 
             $profileData = [
-                'unit_id' => $validated['unit_id'],
+                'unit_id' => $validated['unit_id'] ?? null,
             ];
 
             $user->profile->update($profileData);

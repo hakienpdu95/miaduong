@@ -26,7 +26,7 @@ class UserRequest extends FormRequest
 
         $rules = [
             'account_type' => ['required', Rule::in(['warehouse_management', 'foreman'])],
-            'unit_id' => ['required', 'exists:units,id'],
+            'unit_id' => ['required_if:account_type,foreman', 'exists:units,id'], // Chỉ required khi account_type là foreman
             'username' => ['required', 'string', 'max:255'],
             'name' => ['nullable', 'required_if:account_type,warehouse_management', 'string', 'max:255'],
             'email' => ['nullable'],
@@ -54,7 +54,7 @@ class UserRequest extends FormRequest
         return [
             'account_type.required' => 'Loại tài khoản là bắt buộc.',
             'account_type.in' => 'Loại tài khoản không hợp lệ.',
-            'unit_id.required' => 'Đơn vị là bắt buộc.',
+            'unit_id.required_if' => 'Đơn vị là bắt buộc khi loại tài khoản là Quản đốc.',
             'unit_id.exists' => 'Đơn vị không tồn tại.',
             'username.required' => 'Tên tài khoản là bắt buộc.',
             'username.unique' => 'Tên tài khoản đã tồn tại.',
