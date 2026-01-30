@@ -11,7 +11,7 @@ class MaintenanceTypeController extends Controller
 {
     public function datatable(Request $request)
     {
-        $columns = ['id', 'name', 'description', 'created_at'];
+        $columns = ['id', 'name', 'created_at'];
         $query = MaintenanceType::select($columns);
 
         // Optional: Show soft deleted nếu param ?withTrashed=1

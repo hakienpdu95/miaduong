@@ -39,7 +39,6 @@
                     <thead>
                         <tr>
                             <th>Tên loại bảo trì</th>
-                            <th>Mô tả</th>
                             <th>Ngày tạo</th>
                             <th>Hành động</th>
                         </tr>
@@ -73,7 +72,6 @@
                 },
                 columns: [
                     { data: 'name', name: 'name' },
-                    { data: 'description', name: 'description' },
                     { data: 'formatted_created_at', name: 'created_at' },
                     { data: 'actions', name: 'actions', orderable: false, searchable: false }
                 ],
