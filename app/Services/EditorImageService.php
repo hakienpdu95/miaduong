@@ -48,11 +48,9 @@ class EditorImageService
      * @param string $fullUrl
      * @return void
      */
-    public function deleteImage(string $fullUrl): void
-    {
-        // Parse relative path từ full_url (bỏ /storage/)
-        $relativePath = str_replace('/storage/', '', parse_url($fullUrl, PHP_URL_PATH));
-
+    public function deleteImage(string $fullUrl): void {
+        $path = parse_url($fullUrl, PHP_URL_PATH);
+        $relativePath = ltrim(str_replace('/storage/', '', $path), '/');  // Thêm ltrim để bỏ leading /
         if (Storage::disk('public')->exists($relativePath)) {
             Storage::disk('public')->delete($relativePath);
         }
