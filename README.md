@@ -77,3 +77,5 @@ php artisan cache:clear && php artisan route:clear && php artisan config:clear &
  git clean -fd
 
 ## Chạy lệnh chèn data country: php artisan import:countries --force --chunk=1000
+
+## Stoage link trên server: ln -s /home/checkvn.vn/asset.checkvn.vn/storage/app/public/ /home/checkvn.vn/asset.checkvn.vn/public/storage
