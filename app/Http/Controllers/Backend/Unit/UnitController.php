@@ -43,7 +43,6 @@ class UnitController extends Controller
                 'name' => $validated['name'],
                 'supervisor_name' => $validated['supervisor_name'],
                 'supervisor_phone' => $validated['supervisor_phone'] ?? null,
-                'quantity' => $validated['quantity'] ?? null,
                 'description' => $validated['description'] ?? null,
             ];
 
@@ -63,7 +62,12 @@ class UnitController extends Controller
     public function edit($id)
     {
         $unit = Unit::findOrFail($id);
-        return view('backend.unit.edit', compact('unit'));
+
+        $batchQuantity = $unit->equipments()->where('import_method', 'batch_series')->sum('quantity');
+        $singleCount = $unit->equipments()->where('import_method', 'single_item')->count();
+        $totalQuantity = $batchQuantity + $singleCount;
+
+        return view('backend.unit.edit', compact('unit', 'totalQuantity'));
     }
 
     /**
@@ -81,7 +85,6 @@ class UnitController extends Controller
                 'name' => $validated['name'],
                 'supervisor_name' => $validated['supervisor_name'],
                 'supervisor_phone' => $validated['supervisor_phone'] ?? null,
-                'quantity' => $validated['quantity'] ?? null,
                 'description' => $validated['description'] ?? null,
             ];
 

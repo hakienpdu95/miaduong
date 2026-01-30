@@ -28,11 +28,6 @@
                             <input type="text" class="form-control" id="supervisor_phone" name="supervisor_phone">
                         </div>
 
-                        <div class="mb-3">
-                            <label for="quantity" class="form-label">Số lượng thiết bị</label>
-                            <input type="number" class="form-control" id="quantity" name="quantity" min="0">
-                        </div>
-
                         <div class="mb-3"> 
 	                        <label for="description" class="form-label">Mô tả</label> 
 	                        <div class="suneditor-block border rounded" id="description-editor" data-input="description-input" data-index="1" data-height="200px"></div> 

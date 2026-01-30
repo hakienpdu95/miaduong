@@ -34,7 +34,7 @@
 
                     <div class="mb-3"> 
                         <label for="quantity" class="form-label">Số lượng thiết bị</label> 
-                        <input type="number" class="form-control" id="quantity" name="quantity" min="0" value="{{ old('quantity', $unit->quantity) }}"> 
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="0" value="{{ old('quantity', $totalQuantity) }}" readonly> 
                     </div> 
 
                     <div class="mb-3"> 
